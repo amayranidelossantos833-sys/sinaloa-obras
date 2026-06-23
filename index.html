@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="theme-color" content="#1A2332"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Sinaloa Obras"/>
+<meta name="description" content="Control de gastos e ingresos de obra — Sinaloa Construcciones"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<title>Sinaloa Construcciones</title>
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, onValue, remove, update, query, orderByChild }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// ═══════════════════════════════════════════════
+//  🔥 FIREBASE CONFIG — pega aquí tus credenciales
+// ═══════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyAgkeihml_mprJX5Iq1lE9FAsO7unmu4uA",
+  authDomain: "obras-91cb4.firebaseapp.com",
+  databaseURL: "https://obras-91cb4-default-rtdb.firebaseio.com",
+  projectId: "obras-91cb4",
+  storageBucket: "obras-91cb4.firebasestorage.app",
+  messagingSenderId: "726672201640",
+  appId: "1:726672201640:web:4cdf4b523f6f9346bbaf9d"
+};
+
+
+const app  = initializeApp(firebaseConfig);
+const db   = getDatabase(app);
+const dbRef = ref(db, "gastos");
+
+// ── Global state ──────────────────────────────
+let allRecords  = [];
+let charts      = {};
+let activeTab   = "captura";
+let editingKey  = null;
+
+// ── DOM ready ────────────────────────────────
+window.addEventListener("DOMContentLoaded", () => {
+  initNav();
+  initForm();
+  setupFirebaseListener(dbRef, db, ref, remove, update);
+  renderSummary();
+});
+
+// ══════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════
+function initNav() {
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tab = btn.dataset.tab;
+      setTab(tab);
+    });
+  });
+}
+
+function setTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById(`screen-${tab}`).classList.add("active");
+  document.querySelector(`.nav-btn[data-tab="${tab}"]`).classList.add("active");
+  if (tab === "resumen") setTimeout(renderCharts, 50);
+  if (tab === "movimientos") renderMovimientos();
+}
+
+// ══════════════════════════════════════════════
+//  FIREBASE LISTENER
+// ══════════════════════════════════════════════
+function setupFirebaseListener(dbRef, db, ref, remove, update) {
+  onValue(dbRef, snapshot => {
+    allRecords = [];
+    snapshot.forEach(child => {
+      allRecords.push({ key: child.key, ...child.val() });
+    });
+    allRecords.sort((a,b) => (b.fecha||"").localeCompare(a.fecha||""));
+    updateKPIs();
+    if (activeTab === "resumen")   renderCharts();
+    if (activeTab === "movimientos") renderMovimientos();
+  });
+
+  // Expose remove/update for delete & edit actions
+  window.__firebaseOps = { db, ref, remove, update };
+}
+
+// ══════════════════════════════════════════════
+//  FORM INIT & SUBMIT
+// ══════════════════════════════════════════════
+function initForm() {
+  document.getElementById("form-fecha").value = today();
+
+  document.getElementById("expense-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const record = {
+      fecha:      document.getElementById("form-fecha").value,
+      tipo:       document.getElementById("form-tipo").value,
+      obra:       document.getElementById("form-obra").value,
+      proveedor:  document.getElementById("form-proveedor").value,
+      quien:      document.getElementById("form-quien").value,
+      clase:      document.getElementById("form-clase").value,
+      monto:      parseFloat(document.getElementById("form-monto").value) || 0,
+      descripcion:document.getElementById("form-desc").value.trim(),
+      factura:    document.getElementById("form-factura").value.trim(),
+      notas:      document.getElementById("form-notas").value.trim(),
+      ts:         Date.now()
+    };
+
+    const btn = document.getElementById("submit-btn");
+    btn.disabled = true;
+    btn.textContent = "Guardando…";
+
+    try {
+      if (editingKey) {
+        const { db, ref, update } = window.__firebaseOps;
+        await update(ref(db, `gastos/${editingKey}`), record);
+        editingKey = null;
+        btn.textContent = "✓ Actualizado";
+        document.getElementById("form-title").textContent = "Nuevo registro";
+        document.getElementById("cancel-edit-btn").style.display = "none";
+      } else {
+        await push(dbRef, record);
+        btn.textContent = "✓ Guardado";
+      }
+      resetForm();
+    } catch(err) {
+      alert("Error al guardar. Revisa tu conexión o la configuración de Firebase.\n" + err.message);
+      btn.textContent = "Guardar registro";
+    }
+    btn.disabled = false;
+    setTimeout(() => { btn.textContent = "Guardar registro"; }, 2000);
+  });
+
+  document.getElementById("cancel-edit-btn").addEventListener("click", () => {
+    editingKey = null;
+    resetForm();
+    document.getElementById("form-title").textContent = "Nuevo registro";
+    document.getElementById("cancel-edit-btn").style.display = "none";
+  });
+}
+
+function resetForm() {
+  document.getElementById("expense-form").reset();
+  document.getElementById("form-fecha").value = today();
+}
+
+// ══════════════════════════════════════════════
+//  KPIs
+// ══════════════════════════════════════════════
+function updateKPIs() {
+  const mes = currentMonth();
+  const thisMes = allRecords.filter(r => (r.fecha||"").startsWith(mes));
+
+  const gastoEmp = thisMes.filter(r=>r.clase==="Empresa" && r.tipo!=="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
+  const gastoPer = thisMes.filter(r=>r.clase==="Personal").reduce((s,r)=>s+r.monto,0);
+  const diesel   = thisMes.filter(r=>["Diesel / Combustible","Aerogas"].includes(r.tipo)).reduce((s,r)=>s+r.monto,0);
+  const ingresos = allRecords.filter(r=>r.tipo==="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
+  const gastoTotal = allRecords.filter(r=>r.clase==="Empresa"&&r.tipo!=="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
+  const balance = ingresos - gastoTotal;
+
+  setText("kpi-empresa",  fmt(gastoEmp));
+  setText("kpi-personal", fmt(gastoPer));
+  setText("kpi-diesel",   fmt(diesel));
+  setText("kpi-balance",  fmt(balance));
+  document.getElementById("kpi-balance").style.color = balance >= 0 ? "#27AE60" : "#C0392B";
+  setText("kpi-registros", thisMes.length + " mov.");
+}
+
+// ══════════════════════════════════════════════
+//  MOVIMIENTOS TABLE
+// ══════════════════════════════════════════════
+function renderMovimientos() {
+  const filtroClase = document.getElementById("filtro-clase")?.value || "";
+  const filtroObra  = document.getElementById("filtro-obra-mov")?.value || "";
+  const filtroMes   = document.getElementById("filtro-mes")?.value || "";
+
+  let data = [...allRecords];
+  if (filtroClase) data = data.filter(r => r.clase === filtroClase);
+  if (filtroObra)  data = data.filter(r => r.obra === filtroObra);
+  if (filtroMes)   data = data.filter(r => (r.fecha||"").startsWith(filtroMes));
+
+  const tbody = document.getElementById("tabla-body");
+  if (!tbody) return;
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:#888;">Sin registros con estos filtros</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(r => `
+    <tr class="row-${r.clase === 'Empresa' ? 'emp' : 'per'}">
+      <td class="fecha-cell">${r.fecha||""}</td>
+      <td><span class="tag tag-${tipoClass(r.tipo)}">${r.tipo||""}</span></td>
+      <td class="hide-xs">${obraShort(r.obra)}</td>
+      <td class="hide-sm">${provShort(r.proveedor)}</td>
+      <td><span class="badge-clase badge-${r.clase==='Empresa'?'emp':'per'}">${r.clase||""}</span></td>
+      <td class="monto-cell ${r.tipo==='Ingreso de Obra'?'pos':''}">${r.tipo==='Ingreso de Obra'?'+':''}${fmt(r.monto)}</td>
+      <td class="actions-cell">
+        <button class="act-btn" onclick="editRecord('${r.key}')" title="Editar">✏️</button>
+        <button class="act-btn del" onclick="deleteRecord('${r.key}')" title="Eliminar">🗑</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+window.deleteRecord = async (key) => {
+  if (!confirm("¿Eliminar este registro?")) return;
+  const { db, ref, remove } = window.__firebaseOps;
+  await remove(ref(db, `gastos/${key}`));
+};
+
+window.editRecord = (key) => {
+  const r = allRecords.find(x => x.key === key);
+  if (!r) return;
+  editingKey = key;
+  setTab("captura");
+  setTimeout(() => {
+    document.getElementById("form-fecha").value = r.fecha||"";
+    document.getElementById("form-tipo").value = r.tipo||"";
+    document.getElementById("form-obra").value = r.obra||"";
+    document.getElementById("form-proveedor").value = r.proveedor||"";
+    document.getElementById("form-quien").value = r.quien||"";
+    document.getElementById("form-clase").value = r.clase||"Empresa";
+    document.getElementById("form-monto").value = r.monto||"";
+    document.getElementById("form-desc").value = r.descripcion||"";
+    document.getElementById("form-factura").value = r.factura||"";
+    document.getElementById("form-notas").value = r.notas||"";
+    document.getElementById("form-title").textContent = "Editar registro";
+    document.getElementById("cancel-edit-btn").style.display = "inline-flex";
+    document.getElementById("form-monto").focus();
+  }, 50);
+};
+
+window.applyFilters = () => renderMovimientos();
+
+// ══════════════════════════════════════════════
+//  CHARTS (Resumen)
+// ══════════════════════════════════════════════
+function renderSummary() { /* triggered on tab change */ }
+
+function renderCharts() {
+  updateKPIs();
+
+  // By category
+  const catMap = {};
+  allRecords.filter(r=>r.clase==="Empresa"&&r.tipo!=="Ingreso de Obra").forEach(r => {
+    catMap[r.tipo] = (catMap[r.tipo]||0) + r.monto;
+  });
+  const catLabels = Object.keys(catMap).sort((a,b)=>catMap[b]-catMap[a]).slice(0,8);
+  const catVals   = catLabels.map(k=>catMap[k]);
+
+  // By obra
+  const obraMap = {};
+  allRecords.filter(r=>r.clase==="Empresa"&&r.tipo!=="Ingreso de Obra").forEach(r => {
+    const o = obraShort(r.obra);
+    obraMap[o] = (obraMap[o]||0) + r.monto;
+  });
+  const obraLabels = Object.keys(obraMap).sort((a,b)=>obraMap[b]-obraMap[a]);
+  const obraVals   = obraLabels.map(k=>obraMap[k]);
+
+  // Empresa vs Personal
+  const empTotal = allRecords.filter(r=>r.clase==="Empresa"&&r.tipo!=="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
+  const perTotal = allRecords.filter(r=>r.clase==="Personal").reduce((s,r)=>s+r.monto,0);
+  const ingTotal = allRecords.filter(r=>r.tipo==="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
+
+  // Monthly trend
+  const monthMap = {};
+  allRecords.forEach(r => {
+    if (!r.fecha) return;
+    const m = r.fecha.slice(0,7);
+    if (!monthMap[m]) monthMap[m] = { emp:0, per:0, ing:0 };
+    if (r.tipo==="Ingreso de Obra") monthMap[m].ing += r.monto;
+    else if (r.clase==="Empresa")   monthMap[m].emp += r.monto;
+    else                            monthMap[m].per += r.monto;
+  });
+  const months = Object.keys(monthMap).sort();
+  const empMonthly = months.map(m=>monthMap[m].emp);
+  const perMonthly = months.map(m=>monthMap[m].per);
+  const ingMonthly = months.map(m=>monthMap[m].ing);
+  const monthLabels = months.map(m => {
+    const [y,mo] = m.split("-");
+    return ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][parseInt(mo)] + " " + y.slice(2);
+  });
+
+  const COLORS = ["#1A2332","#E8A217","#27AE60","#2980B9","#8E44AD","#C0392B","#16A085","#D35400"];
+
+  destroyChart("chartCat");
+  destroyChart("chartObra");
+  destroyChart("chartClase");
+  destroyChart("chartTrend");
+
+  // 1. Category bar
+  const ctxCat = document.getElementById("chartCat");
+  if (ctxCat) {
+    charts["chartCat"] = new Chart(ctxCat, {
+      type: "bar",
+      data: { labels: catLabels, datasets: [{ label:"Gasto", data: catVals, backgroundColor: COLORS }]},
+      options: { ...barOpts("Gasto por categoría ($)"), indexAxis:"y" }
+    });
+  }
+
+  // 2. Obra pie
+  const ctxObra = document.getElementById("chartObra");
+  if (ctxObra) {
+    charts["chartObra"] = new Chart(ctxObra, {
+      type: "doughnut",
+      data: { labels: obraLabels, datasets:[{ data:obraVals, backgroundColor:COLORS, borderWidth:2, borderColor:"#fff" }]},
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}}} }
+    });
+  }
+
+  // 3. Empresa vs Personal bar
+  const ctxClase = document.getElementById("chartClase");
+  if (ctxClase) {
+    charts["chartClase"] = new Chart(ctxClase, {
+      type: "bar",
+      data: {
+        labels: ["Empresa","Personal","Ingresos"],
+        datasets:[{ data:[empTotal,perTotal,ingTotal], backgroundColor:["#1A2332","#C0392B","#27AE60"], borderRadius:6 }]
+      },
+      options: barOpts("Totales ($)")
+    });
+  }
+
+  // 4. Trend line
+  const ctxTrend = document.getElementById("chartTrend");
+  if (ctxTrend) {
+    charts["chartTrend"] = new Chart(ctxTrend, {
+      type: "line",
+      data: {
+        labels: monthLabels,
+        datasets: [
+          { label:"Empresa", data:empMonthly, borderColor:"#1A2332", backgroundColor:"rgba(26,35,50,0.1)", fill:true, tension:0.4, pointRadius:4 },
+          { label:"Personal", data:perMonthly, borderColor:"#C0392B", backgroundColor:"rgba(192,57,43,0.07)", fill:true, tension:0.4, pointRadius:4 },
+          { label:"Ingresos", data:ingMonthly, borderColor:"#27AE60", backgroundColor:"rgba(39,174,96,0.07)", fill:true, tension:0.4, pointRadius:4 },
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}} },
+        scales:{
+          y:{ ticks:{ callback: v=>"$"+fmtK(v) }, grid:{ color:"#f0f0f0" } },
+          x:{ grid:{ display:false } }
+        }
+      }
+    });
+  }
+}
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function barOpts(title) {
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ ticks:{ callback: v=>"$"+fmtK(v) }, grid:{ color:"#f0f0f0" } },
+      y:{ grid:{ display:false } }
+    }
+  };
+}
+
+// ══════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════
+function today() { return new Date().toISOString().split("T")[0]; }
+function currentMonth() { return new Date().toISOString().slice(0,7); }
+function fmt(n) { return "$" + (n||0).toLocaleString("es-MX", {minimumFractionDigits:0}); }
+function fmtK(n) { return n>=1000 ? Math.round(n/1000)+"k" : n; }
+function setText(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
+
+function obraShort(o) {
+  if (!o) return "";
+  return o.replace(" (SLP)","").replace(" (NL)","").replace(" (SIN)","").replace("N/A (Personal)","Personal");
+}
+function provShort(p) {
+  if (!p) return "";
+  return p.replace("Tarjeta Trabajador","TRJ").replace("Volkswagen Leasing","VW Leasing");
+}
+function tipoClass(tipo) {
+  const m = {
+    "Diesel / Combustible":"diesel","Aerogas":"diesel",
+    "Nómina / Sueldos":"nomina","Viáticos":"viaticos",
+    "Refacciones (Cadeco)":"refaccion","Llantas / Mantenimiento":"refaccion",
+    "Ingreso de Obra":"ingreso","Colegiatura":"personal",
+    "Restaurante / Comida":"personal","Vacaciones / Viaje":"personal",
+  };
+  return m[tipo] || "otro";
+}
+</script>
+
+<style>
+/* ── TOKENS ──────────────────────────────────── */
+:root {
+  --c-dark:    #1A2332;
+  --c-mid:     #2C3E50;
+  --c-accent:  #E8A217;
+  --c-green:   #27AE60;
+  --c-red:     #C0392B;
+  --c-blue:    #2980B9;
+  --c-bg:      #F5F6FA;
+  --c-white:   #FFFFFF;
+  --c-border:  #E2E5EC;
+  --c-text:    #1A2332;
+  --c-muted:   #7F8C9B;
+  --c-emp:     #EAF7EF;
+  --c-per:     #FDEDEC;
+  --nav-h:     60px;
+  --radius:    10px;
+  --shadow:    0 2px 12px rgba(26,35,50,.08);
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:var(--c-bg); color:var(--c-text); font-size:14px; }
+
+/* ── LAYOUT ──────────────────────────────────── */
+.app-header {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  background:var(--c-dark); color:#fff;
+  height:56px; display:flex; align-items:center; padding:0 1rem;
+  gap:12px; box-shadow:0 2px 8px rgba(0,0,0,.3);
+}
+.app-header h1 { font-size:16px; font-weight:600; letter-spacing:.02em; }
+.app-header .subtitle { font-size:11px; color:#8FA4B8; margin-top:1px; }
+.header-logo { width:32px; height:32px; background:var(--c-accent); border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; color:var(--c-dark); flex-shrink:0; }
+
+.main-content { margin-top:56px; margin-bottom:var(--nav-h); padding:1rem; max-width:900px; margin-left:auto; margin-right:auto; }
+@media(min-width:900px) { .main-content { padding:1.5rem 2rem; } }
+
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0; z-index:100;
+  height:var(--nav-h); background:var(--c-white);
+  border-top:1px solid var(--c-border);
+  display:flex; align-items:stretch;
+  box-shadow:0 -2px 12px rgba(0,0,0,.06);
+}
+.nav-btn {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:3px; border:none; background:transparent; cursor:pointer;
+  font-size:10px; color:var(--c-muted); font-weight:500; transition:color .15s;
+  padding:0; -webkit-appearance:none;
+}
+.nav-btn .icon { font-size:20px; line-height:1; }
+.nav-btn.active { color:var(--c-dark); }
+.nav-btn.active .icon { transform:scale(1.1); }
+
+/* ── SCREENS ─────────────────────────────────── */
+.screen { display:none; }
+.screen.active { display:block; }
+
+/* ── KPI GRID ────────────────────────────────── */
+.kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:1rem; }
+@media(min-width:600px) { .kpi-grid { grid-template-columns:repeat(3,1fr); } }
+.kpi-card {
+  background:var(--c-white); border-radius:var(--radius);
+  padding:14px; box-shadow:var(--shadow);
+  border-left:3px solid var(--c-border);
+}
+.kpi-card.accent { border-left-color:var(--c-accent); }
+.kpi-card.green  { border-left-color:var(--c-green); }
+.kpi-card.red    { border-left-color:var(--c-red); }
+.kpi-card.blue   { border-left-color:var(--c-blue); }
+.kpi-label { font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--c-muted); margin-bottom:4px; }
+.kpi-value { font-size:20px; font-weight:700; color:var(--c-dark); line-height:1.1; }
+.kpi-sub   { font-size:10px; color:var(--c-muted); margin-top:3px; }
+
+/* ── CARDS ───────────────────────────────────── */
+.card { background:var(--c-white); border-radius:var(--radius); padding:1rem 1.1rem; box-shadow:var(--shadow); margin-bottom:1rem; }
+.card-title { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--c-muted); margin-bottom:.9rem; }
+
+/* ── FORM ────────────────────────────────────── */
+.form-group { margin-bottom:.85rem; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+@media(max-width:400px) { .form-row, .form-row-3 { grid-template-columns:1fr; } }
+label { display:block; font-size:12px; font-weight:500; color:var(--c-muted); margin-bottom:4px; }
+input, select, textarea {
+  width:100%; padding:10px 12px; border:1.5px solid var(--c-border);
+  border-radius:8px; font-size:14px; color:var(--c-text);
+  background:var(--c-white); transition:border-color .15s;
+  -webkit-appearance:none; appearance:none;
+}
+input:focus, select:focus, textarea:focus { outline:none; border-color:var(--c-dark); }
+textarea { resize:vertical; min-height:72px; }
+select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237F8C9B' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:32px; }
+
+.req { color:var(--c-accent); }
+.btn-primary {
+  width:100%; padding:13px; border:none; border-radius:var(--radius);
+  background:var(--c-dark); color:#fff; font-size:15px; font-weight:600;
+  cursor:pointer; transition:background .15s; margin-top:4px;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.btn-primary:active { background:#0F1620; }
+.btn-primary:disabled { opacity:.6; cursor:default; }
+.btn-secondary {
+  width:100%; padding:11px; border:1.5px solid var(--c-border); border-radius:var(--radius);
+  background:transparent; color:var(--c-text); font-size:14px; font-weight:500;
+  cursor:pointer; margin-top:8px; display:inline-flex; align-items:center; justify-content:center; gap:6px;
+}
+
+/* ── CLASE TOGGLE ────────────────────────────── */
+.clase-toggle { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.clase-option { display:none; }
+.clase-label {
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  padding:10px; border:2px solid var(--c-border); border-radius:8px;
+  cursor:pointer; font-size:13px; font-weight:500; color:var(--c-muted); transition:all .15s;
+}
+.clase-option:checked + .clase-label {
+  border-color:var(--c-dark); background:var(--c-dark); color:#fff;
+}
+
+/* ── CHARTS ──────────────────────────────────── */
+.chart-wrap { position:relative; height:220px; }
+.chart-wrap-tall { position:relative; height:270px; }
+.charts-2col { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+@media(max-width:560px) { .charts-2col { grid-template-columns:1fr; } }
+
+/* ── TABLE ───────────────────────────────────── */
+.table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--c-muted); padding:8px 10px; border-bottom:1.5px solid var(--c-border); white-space:nowrap; text-align:left; }
+td { padding:9px 10px; border-bottom:1px solid var(--c-border); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr.row-emp { background:var(--c-emp); }
+tr.row-per { background:var(--c-per); }
+.fecha-cell { font-size:12px; color:var(--c-muted); white-space:nowrap; }
+.monto-cell { font-weight:700; text-align:right; white-space:nowrap; }
+.monto-cell.pos { color:var(--c-green); }
+.actions-cell { white-space:nowrap; }
+.act-btn { background:none; border:none; cursor:pointer; font-size:15px; padding:4px 5px; border-radius:6px; }
+.act-btn:hover { background:var(--c-bg); }
+.act-btn.del:hover { background:#FDEDEC; }
+@media(max-width:500px) { .hide-xs { display:none; } }
+@media(max-width:640px) { .hide-sm { display:none; } }
+
+/* ── TAGS / BADGES ───────────────────────────── */
+.tag { display:inline-block; font-size:10px; padding:2px 8px; border-radius:999px; font-weight:600; white-space:nowrap; }
+.tag-diesel   { background:#FEF3DC; color:#7A4D08; }
+.tag-nomina   { background:#E3F4EB; color:#1A5C34; }
+.tag-viaticos { background:#E8F2FC; color:#0D4A8C; }
+.tag-refaccion{ background:#F3EFF9; color:#5B3D90; }
+.tag-ingreso  { background:#D5F5E3; color:#145A32; }
+.tag-personal { background:#FDEDEC; color:#922B21; }
+.tag-otro     { background:#EAECEE; color:#555; }
+.badge-clase  { display:inline-block; font-size:10px; padding:2px 7px; border-radius:999px; font-weight:600; }
+.badge-emp    { background:#D5F5E3; color:#1A5C34; }
+.badge-per    { background:#FDEDEC; color:#922B21; }
+
+/* ── FILTERS ─────────────────────────────────── */
+.filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:1rem; }
+.filters select { width:auto; flex:1; min-width:120px; padding:8px 32px 8px 10px; font-size:13px; }
+
+/* ── SETUP SCREEN ────────────────────────────── */
+.setup-step { display:flex; gap:12px; margin-bottom:1.2rem; align-items:flex-start; }
+.step-num { background:var(--c-dark); color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; margin-top:2px; }
+.step-body h3 { font-size:14px; font-weight:600; margin-bottom:4px; }
+.step-body p  { font-size:13px; color:var(--c-muted); line-height:1.5; }
+.step-body a  { color:var(--c-blue); text-decoration:none; font-weight:500; }
+.code-block { background:var(--c-bg); border:1px solid var(--c-border); border-radius:8px; padding:10px 12px; font-family:monospace; font-size:12px; margin-top:8px; overflow-x:auto; white-space:pre; line-height:1.6; }
+.alert-box { background:#FEF9E7; border-left:3px solid var(--c-accent); border-radius:0 var(--radius) var(--radius) 0; padding:10px 14px; font-size:13px; color:#7D6000; margin-bottom:1rem; }
+.success-box { background:#E9F7EF; border-left:3px solid var(--c-green); border-radius:0 var(--radius) var(--radius) 0; padding:10px 14px; font-size:13px; color:#1A5C34; margin-bottom:1rem; }
+
+/* ── OFFLINE TOAST ───────────────────────────── */
+#offline-toast {
+  display:none; position:fixed; bottom:calc(var(--nav-h)+12px); left:50%; transform:translateX(-50%);
+  background:#333; color:#fff; padding:8px 16px; border-radius:999px; font-size:13px; z-index:200;
+  box-shadow:0 4px 12px rgba(0,0,0,.2);
+}
+</style>
+</head>
+<body>
+
+<!-- OFFLINE TOAST -->
+<div id="offline-toast">⚠️ Sin conexión — revisa tu internet</div>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="header-logo">SC</div>
+  <div>
+    <div class="app-header h1" style="font-size:15px;font-weight:700;color:#fff;">Sinaloa Construcciones</div>
+    <div class="subtitle">Control de gastos de obra</div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main-content">
+
+  <!-- ── CAPTURA ─────────────────────────────── -->
+  <div class="screen active" id="screen-captura">
+    <p id="form-title" class="card-title" style="font-size:14px;font-weight:700;color:var(--c-dark);margin-bottom:.75rem;">Nuevo registro</p>
+
+    <div class="card">
+      <form id="expense-form" autocomplete="off">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fecha <span class="req">*</span></label>
+            <input type="date" id="form-fecha" required/>
+          </div>
+          <div class="form-group">
+            <label>Monto ($) <span class="req">*</span></label>
+            <input type="number" id="form-monto" placeholder="0.00" step="0.01" min="0" required inputmode="decimal"/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Tipo de gasto <span class="req">*</span></label>
+          <select id="form-tipo" required>
+            <option value="">— Seleccionar —</option>
+            <optgroup label="Combustibles">
+              <option>Diesel / Combustible</option>
+              <option>Aerogas</option>
+            </optgroup>
+            <optgroup label="Insumos de obra">
+              <option>Refacciones (Cadeco)</option>
+              <option>Llantas / Mantenimiento</option>
+              <option>Material Construcción</option>
+              <option>Herramienta Menor</option>
+            </optgroup>
+            <optgroup label="Operativos">
+              <option>Viáticos</option>
+              <option>Nómina / Sueldos</option>
+              <option>Transporte Emergencia</option>
+              <option>Renta de Equipo</option>
+            </optgroup>
+            <optgroup label="Ingresos">
+              <option>Ingreso de Obra</option>
+            </optgroup>
+            <optgroup label="Personales">
+              <option>Colegiatura</option>
+              <option>Restaurante / Comida</option>
+              <option>Vacaciones / Viaje</option>
+              <option>Gasto Personal Otro</option>
+            </optgroup>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Obra / Proyecto <span class="req">*</span></label>
+          <select id="form-obra" required>
+            <option value="">— Seleccionar —</option>
+            <optgroup label="San Luis Potosí">
+              <option>Suacero (SLP)</option>
+              <option>Villamagna (SLP)</option>
+              <option>Concreteque (SLP)</option>
+              <option>Terracerias (SLP)</option>
+            </optgroup>
+            <optgroup label="Nuevo León">
+              <option>Herradura (NL)</option>
+              <option>Fimex (NL)</option>
+              <option>Puente Pesquería (NL)</option>
+              <option>Nueva Alianza (NL)</option>
+            </optgroup>
+            <optgroup label="Sinaloa">
+              <option>Abuya (SIN)</option>
+              <option>Culiacán (SIN)</option>
+            </optgroup>
+            <option>Oficina General</option>
+            <option>N/A (Personal)</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Proveedor / Crédito</label>
+            <select id="form-proveedor">
+              <option value="">— Seleccionar —</option>
+              <optgroup label="Créditos">
+                <option>Gaspeed</option>
+                <option>Aerogas</option>
+                <option>Cadeco</option>
+                <option>Volkswagen Leasing</option>
+                <option>Eurollantas</option>
+              </optgroup>
+              <optgroup label="Tarjetas trabajadores">
+                <option>Tarjeta Trabajador #1</option>
+                <option>Tarjeta Trabajador #2</option>
+                <option>Tarjeta Trabajador #3</option>
+                <option>Tarjeta Trabajador #4</option>
+              </optgroup>
+              <optgroup label="Otro">
+                <option>Efectivo</option>
+                <option>Transferencia</option>
+                <option>Otro</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Quién realizó el gasto</label>
+            <select id="form-quien">
+              <option value="">— Seleccionar —</option>
+              <option>Titular / Oficina</option>
+              <option>Trabajador #1</option>
+              <option>Trabajador #2</option>
+              <option>Trabajador #3</option>
+              <option>Trabajador #4</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Empresa o Personal <span class="req">*</span></label>
+          <div class="clase-toggle">
+            <div>
+              <input class="clase-option" type="radio" name="clase" id="clase-emp" value="Empresa" checked/>
+              <label class="clase-label" for="clase-emp">🏗 Empresa</label>
+            </div>
+            <div>
+              <input class="clase-option" type="radio" name="clase" id="clase-per" value="Personal"/>
+              <label class="clase-label" for="clase-per">👤 Personal</label>
+            </div>
+          </div>
+          <input type="hidden" id="form-clase" value="Empresa"/>
+        </div>
+
+        <div class="form-group">
+          <label>Descripción / Concepto</label>
+          <input type="text" id="form-desc" placeholder="Ej: Carga diesel camión 089 — 400 L"/>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>No. Factura / Ticket</label>
+            <input type="text" id="form-factura" placeholder="FAC-001"/>
+          </div>
+          <div class="form-group">
+            <label>Notas</label>
+            <input type="text" id="form-notas" placeholder="Observaciones…"/>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submit-btn">💾 Guardar registro</button>
+        <button type="button" class="btn-secondary" id="cancel-edit-btn" style="display:none;">✕ Cancelar edición</button>
+      </form>
+    </div>
+
+    <div class="alert-box">
+      <strong>💡 Tip:</strong> Registra cada gasto inmediatamente al realizarlo. La app funciona en celular y computadora y todos ven los datos en tiempo real.
+    </div>
+  </div>
+
+  <!-- ── RESUMEN ──────────────────────────────── -->
+  <div class="screen" id="screen-resumen">
+    <div class="kpi-grid">
+      <div class="kpi-card accent">
+        <div class="kpi-label">Gastos empresa (mes)</div>
+        <div class="kpi-value" id="kpi-empresa">$0</div>
+        <div class="kpi-sub">Clasificados como empresa</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Gastos personales (mes)</div>
+        <div class="kpi-value" id="kpi-personal">$0</div>
+        <div class="kpi-sub">Clasificados como personal</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Diesel + Combustible</div>
+        <div class="kpi-value" id="kpi-diesel">$0</div>
+        <div class="kpi-sub">Mes actual</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Balance (ingresos − gastos)</div>
+        <div class="kpi-value" id="kpi-balance">$0</div>
+        <div class="kpi-sub">Acumulado total</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Movimientos</div>
+        <div class="kpi-value" id="kpi-registros">0</div>
+        <div class="kpi-sub">Este mes</div>
+      </div>
+    </div>
+
+    <div class="charts-2col">
+      <div class="card">
+        <div class="card-title">Por categoría</div>
+        <div class="chart-wrap"><canvas id="chartCat"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Por obra</div>
+        <div class="chart-wrap"><canvas id="chartObra"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Empresa vs Personal vs Ingresos</div>
+      <div class="chart-wrap"><canvas id="chartClase"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Tendencia mensual</div>
+      <div class="chart-wrap-tall"><canvas id="chartTrend"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ── MOVIMIENTOS ──────────────────────────── -->
+  <div class="screen" id="screen-movimientos">
+    <div class="filters">
+      <select id="filtro-clase" onchange="applyFilters()">
+        <option value="">Empresa + Personal</option>
+        <option value="Empresa">Solo empresa</option>
+        <option value="Personal">Solo personal</option>
+      </select>
+      <select id="filtro-obra-mov" onchange="applyFilters()">
+        <option value="">Todas las obras</option>
+        <optgroup label="San Luis Potosí">
+          <option>Suacero (SLP)</option><option>Villamagna (SLP)</option>
+          <option>Concreteque (SLP)</option><option>Terracerias (SLP)</option>
+        </optgroup>
+        <optgroup label="Nuevo León">
+          <option>Herradura (NL)</option><option>Fimex (NL)</option>
+          <option>Puente Pesquería (NL)</option><option>Nueva Alianza (NL)</option>
+        </optgroup>
+        <optgroup label="Sinaloa">
+          <option>Abuya (SIN)</option><option>Culiacán (SIN)</option>
+        </optgroup>
+      </select>
+      <select id="filtro-mes" onchange="applyFilters()">
+        <option value="">Todos los meses</option>
+        <option value="2025-01">Ene 2025</option>
+        <option value="2025-02">Feb 2025</option>
+        <option value="2025-03">Mar 2025</option>
+        <option value="2025-04">Abr 2025</option>
+        <option value="2025-05">May 2025</option>
+        <option value="2025-06">Jun 2025</option>
+        <option value="2025-07">Jul 2025</option>
+        <option value="2025-08">Ago 2025</option>
+        <option value="2025-09">Sep 2025</option>
+        <option value="2025-10">Oct 2025</option>
+        <option value="2025-11">Nov 2025</option>
+        <option value="2025-12">Dic 2025</option>
+      </select>
+    </div>
+
+    <div class="card" style="padding:0;">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th><th>Tipo</th>
+              <th class="hide-xs">Obra</th>
+              <th class="hide-sm">Proveedor</th>
+              <th>Clase</th><th>Monto</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="tabla-body">
+            <tr><td colspan="7" style="text-align:center;padding:2rem;color:#888;">Cargando registros…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CONFIGURACIÓN ────────────────────────── -->
+  <div class="screen" id="screen-config">
+    <div class="alert-box" id="config-status">
+      ⚙️ La app necesita conectarse a Firebase para guardar datos compartidos. Sigue los pasos de abajo — solo se hace una vez.
+    </div>
+
+    <div class="card">
+      <div class="card-title">Guía de configuración — sin programar</div>
+
+      <div class="setup-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Crea una cuenta de Google (gratis)</h3>
+          <p>Si ya tienes Gmail, usa esa cuenta. Ve a <a href="https://firebase.google.com" target="_blank">firebase.google.com</a> e inicia sesión.</p>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Crea un proyecto Firebase</h3>
+          <p>Clic en <strong>"Agregar proyecto"</strong> → ponle nombre (ej. <em>sinaloa-obras</em>) → desactiva Google Analytics → <strong>Crear proyecto</strong>.</p>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Activa Realtime Database</h3>
+          <p>En el menú izquierdo: <strong>Compilación → Realtime Database → Crear base de datos</strong>. Elige la ubicación más cercana (<em>us-central1</em>) y selecciona <strong>Modo de prueba</strong> (puedes ajustar reglas después).</p>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h3>Obtén tus credenciales</h3>
+          <p>Ve a <strong>Configuración del proyecto ⚙️ → General → Tus apps → Agrega app web (&lt;/&gt;)</strong>. Copia el objeto <code>firebaseConfig</code> que aparece.</p>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h3>Edita el archivo index.html</h3>
+          <p>Abre <code>index.html</code> en el Bloc de Notas. Busca el texto <code>REEMPLAZA_CON_TU_API_KEY</code> y sustituye todo el bloque <code>firebaseConfig</code> con tus datos reales.</p>
+          <div class="code-block">const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "mi-proyecto.firebaseapp.com",
+  databaseURL: "https://mi-proyecto-default-rtdb.firebaseio.com",
+  projectId: "mi-proyecto",
+  storageBucket: "mi-proyecto.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123:web:abc123"
+};</div>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <h3>Publica gratis en GitHub Pages</h3>
+          <p>1. Crea cuenta en <a href="https://github.com" target="_blank">github.com</a><br/>
+          2. Clic en <strong>+ New repository</strong> → nombre: <em>sinaloa-obras</em> → Public → Create<br/>
+          3. Sube los 3 archivos (<code>index.html</code>, <code>manifest.json</code>, <code>sw.js</code>)<br/>
+          4. Ve a <strong>Settings → Pages → Branch: main → Save</strong><br/>
+          5. Tu URL quedará: <strong>https://tu-usuario.github.io/sinaloa-obras</strong></p>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">7</div>
+        <div class="step-body">
+          <h3>Instala en el celular (iOS y Android)</h3>
+          <p><strong>iPhone:</strong> Abre la URL en Safari → ícono compartir (cuadro con flecha) → <em>"Agregar a pantalla de inicio"</em><br/>
+          <strong>Android:</strong> Abre en Chrome → menú ⋮ → <em>"Instalar app"</em> o <em>"Agregar a pantalla de inicio"</em></p>
+        </div>
+      </div>
+
+      <div class="success-box">
+        ✅ ¡Listo! Comparte la URL con tus 2 compañeros y todos verán los mismos datos en tiempo real desde cualquier dispositivo.
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
+  <button class="nav-btn active" data-tab="captura" aria-label="Captura">
+    <span class="icon">➕</span>
+    <span>Captura</span>
+  </button>
+  <button class="nav-btn" data-tab="resumen" aria-label="Resumen">
+    <span class="icon">📊</span>
+    <span>Resumen</span>
+  </button>
+  <button class="nav-btn" data-tab="movimientos" aria-label="Movimientos">
+    <span class="icon">📋</span>
+    <span>Movimientos</span>
+  </button>
+  <button class="nav-btn" data-tab="config" aria-label="Configuración">
+    <span class="icon">⚙️</span>
+    <span>Configurar</span>
+  </button>
+</nav>
+
+<script>
+// Sync hidden input with radio buttons
+document.querySelectorAll(".clase-option").forEach(radio => {
+  radio.addEventListener("change", () => {
+    document.getElementById("form-clase").value = radio.value;
+  });
+});
+
+// Offline detection
+window.addEventListener("online",  () => { document.getElementById("offline-toast").style.display="none"; });
+window.addEventListener("offline", () => { document.getElementById("offline-toast").style.display="block"; });
+
+// Service Worker registration
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
