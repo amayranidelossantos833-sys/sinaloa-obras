@@ -260,6 +260,12 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
         <option value="2025-07">Jul 2025</option><option value="2025-08">Ago 2025</option>
         <option value="2025-09">Sep 2025</option><option value="2025-10">Oct 2025</option>
         <option value="2025-11">Nov 2025</option><option value="2025-12">Dic 2025</option>
+        <option value="2026-01">Ene 2026</option><option value="2026-02">Feb 2026</option>
+        <option value="2026-03">Mar 2026</option><option value="2026-04">Abr 2026</option>
+        <option value="2026-05">May 2026</option><option value="2026-06">Jun 2026</option>
+        <option value="2026-07">Jul 2026</option><option value="2026-08">Ago 2026</option>
+        <option value="2026-09">Sep 2026</option><option value="2026-10">Oct 2026</option>
+        <option value="2026-11">Nov 2026</option><option value="2026-12">Dic 2026</option>
       </select>
     </div>
     <div class="card" style="padding:0">
@@ -296,9 +302,9 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
 
       <div class="card-title" style="margin-top:1rem">Cómo actualizar los catálogos</div>
       <div style="font-size:13px;line-height:2;color:var(--dark)">
-        <div>1️⃣ Descarga el <strong>Catalogo_SinaloaObras.xlsx</strong> que te entregué</div>
-        <div>2️⃣ Edítalo: agrega obras, personas, tipos de gasto o proveedores</div>
-        <div>3️⃣ Guárdalo con el nombre exacto: <code style="background:var(--bg);padding:1px 5px;border-radius:4px">catalogo.xlsx</code></div>
+        <div>1️⃣ Descarga y edita el <strong>catalogo.xlsx</strong></div>
+        <div>2️⃣ Agrega obras, personas, tipos de gasto o proveedores en las hojas correspondientes</div>
+        <div>3️⃣ Guárdalo con el mismo nombre: <code style="background:var(--bg);padding:1px 5px;border-radius:4px">catalogo.xlsx</code></div>
         <div>4️⃣ Ve a tu repositorio en GitHub → <strong>Add file → Upload files</strong></div>
         <div>5️⃣ Sube el archivo → <strong>Commit changes</strong></div>
         <div>6️⃣ Recarga la app — los desplegables se actualizan solos ✅</div>
@@ -348,9 +354,9 @@ let charts     = {};
 let editingKey = null;
 let catalog    = { obras:[], personas:[], tipos:[], proveedores:[] };
 
-// ── GITHUB CONFIG — actualiza con tu usuario y repo ──
-const GITHUB_USER = "amayranidelossantos833-sys";       // ← cambia esto
-const GITHUB_REPO = "sinaloa-obras";           // ← cambia si usaste otro nombre
+// ── GITHUB CONFIG ──────────────────────────────
+const GITHUB_USER = "amayranidelossantos833-sys";
+const GITHUB_REPO = "sinaloa-obras";
 const CAT_FILE    = "catalogo.xlsx";
 const CAT_URL     = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${CAT_FILE}`;
 
@@ -361,39 +367,86 @@ window.addEventListener("DOMContentLoaded", async () => {
     r.addEventListener("change", () => { document.getElementById("f-clase").value = r.value; })
   );
 
-  // Combos: si seleccionas del desplegable limpia el texto libre y viceversa
+  // Combos: select + campo de texto libre
   setupCombo("f-tipo-sel",  "f-tipo-txt",  "f-tipo");
   setupCombo("f-obra-sel",  "f-obra-txt",  "f-obra");
   setupCombo("f-prov-sel",  "f-prov-txt",  "f-proveedor");
   setupCombo("f-quien-sel", "f-quien-txt", "f-quien");
 
   initNav();
-  initForm(db, ref, push, remove, update);
+  initForm();
   listenFirebase();
   await loadCatalog();
 
-  // Config screen info
-  const base = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}`;
-  const el = document.getElementById("repo-url");
-  const el2 = document.getElementById("cat-url");
-  if(el)  el.textContent  = `https://github.com/${GITHUB_USER}/${GITHUB_REPO}`;
-  if(el2) el2.textContent = CAT_URL;
+  // Pantalla de configuración
+  const elRepo = document.getElementById("repo-url");
+  const elCat  = document.getElementById("cat-url");
+  if (elRepo) elRepo.textContent = `https://github.com/${GITHUB_USER}/${GITHUB_REPO}`;
+  if (elCat)  elCat.textContent  = CAT_URL;
 });
 
-// ── COMBO FIELD ────────────────────────────────
-function setupCombo(selId, txtId, hiddenId) {
-  const sel = document.getElementById(selId);
-  const txt = document.getElementById(txtId);
-  const hid = document.getElementById(hiddenId);
-  if(!sel||!txt||!hid) return;
-  sel.addEventListener("change", () => {
-    if (sel.value) { txt.value = ""; hid.value = sel.value; }
-    else           { hid.value = txt.value; }
+// ──────────────────────────────────────────────
+// LECTURA DEL EXCEL POR ENCABEZADOS (no por índice)
+// ──────────────────────────────────────────────
+
+/**
+ * Convierte una hoja de trabajo en un array de objetos usando la primera
+ * fila que contenga los encabezados reales como claves.
+ * Ignora filas de título, notas y filas completamente vacías.
+ * @param {object} ws  - Hoja de trabajo XLSX
+ * @returns {object[]} - Array de objetos {ENCABEZADO: valor, …}
+ */
+function sheetToObjectArray(ws) {
+  const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+  if (!raw.length) return [];
+
+  // Busca la primera fila que tenga al menos 2 celdas no vacías — es el encabezado real
+  let headerRowIdx = -1;
+  for (let i = 0; i < raw.length; i++) {
+    const nonEmpty = raw[i].filter(c => String(c).trim() !== "").length;
+    if (nonEmpty >= 2) { headerRowIdx = i; break; }
+  }
+  if (headerRowIdx === -1) return [];
+
+  const headers = raw[headerRowIdx].map(h => String(h).trim().toUpperCase());
+  const dataRows = raw.slice(headerRowIdx + 1);
+
+  return dataRows
+    .map(row => {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = String(row[i] ?? "").trim(); });
+      return obj;
+    })
+    .filter(obj => {
+      // Elimina filas completamente vacías o que solo tienen instrucciones (➕)
+      const vals = Object.values(obj).filter(v => v !== "" && !v.startsWith("➕"));
+      return vals.length > 0;
+    });
+}
+
+/**
+ * Elimina duplicados de un array de strings, ignorando mayúsculas/minúsculas
+ * para detectar duplicados, pero conservando el caso original del primer valor.
+ */
+function dedup(arr) {
+  const seen = new Set();
+  return arr.filter(item => {
+    const key = item.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
-  txt.addEventListener("input", () => {
-    if (txt.value.trim()) { sel.value = ""; hid.value = txt.value.trim(); }
-    else                  { hid.value = sel.value; }
-  });
+}
+
+/** Obtiene el nombre de columna real de la hoja buscando una coincidencia parcial */
+function findCol(obj, ...candidates) {
+  const keys = Object.keys(obj);
+  for (const cand of candidates) {
+    const c = cand.toUpperCase();
+    const found = keys.find(k => k.includes(c));
+    if (found) return found;
+  }
+  return null;
 }
 
 // ── LOAD CATALOG FROM GITHUB ───────────────────
@@ -401,198 +454,323 @@ async function loadCatalog() {
   const statusEl = document.getElementById("catalog-status");
   const catInfo  = document.getElementById("cat-info");
 
-  if (GITHUB_USER === "TU_USUARIO_GITHUB") {
-    if(statusEl) statusEl.textContent = "⚠️ Configura tu usuario de GitHub en la app (ver sección Configurar)";
-    if(catInfo)  catInfo.textContent  = "⚠️ Falta configurar el usuario de GitHub. Edita el index.html y cambia TU_USUARIO_GITHUB por tu nombre de usuario real.";
-    loadFallbackCatalog();
-    return;
-  }
-
   try {
-    if(statusEl) statusEl.innerHTML = '<span class="spinner"></span> Cargando catálogos desde GitHub…';
+    if (statusEl) statusEl.innerHTML = '<span class="spinner"></span> Cargando catálogos desde GitHub…';
     const res = await fetch(CAT_URL + "?t=" + Date.now());
-    if (!res.ok) throw new Error("No encontrado");
-    const buf  = await res.arrayBuffer();
-    const wb   = XLSX.read(buf, { type:"array" });
+    if (!res.ok) throw new Error("Archivo no encontrado en GitHub (HTTP " + res.status + ")");
+    const buf = await res.arrayBuffer();
+    const wb  = XLSX.read(buf, { type: "array" });
 
-    // ── helper: lee una hoja y devuelve filas de datos (salta título+nota+encabezado)
-    const readSheet = (ws) => {
-      const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:"" });
-      // Busca la fila de encabezado buscando la que tenga contenido real en col B (índice 1)
-      // Las primeras filas son: 0=título, 1=nota, 2=encabezados, 3+=datos
-      return rows.slice(3).filter(r => String(r[1]||"").trim() !== "");
-    };
-
-    // Obras — columnas: A(0 vacía) | B(1 nombre) | C(2 estado) | D(3 cliente) | E(4 estatus) | F(5 notas)
+    // ── OBRAS ──────────────────────────────────
+    // Hoja: 🏗 Obras | Columnas: OBRA / PROYECTO, ESTADO, CLIENTE, ESTATUS, NOTAS
     const wsObras = wb.Sheets["🏗 Obras"] || wb.Sheets[wb.SheetNames[0]];
-    catalog.obras = readSheet(wsObras)
-      .filter(r => String(r[4]||"").trim() !== "Terminada")
-      .map(r => ({
-        nombre: String(r[1]).trim(),
-        estado: String(r[2]||"").trim()
-      }));
+    const obrasRaw = sheetToObjectArray(wsObras);
+    catalog.obras = obrasRaw
+      .map(r => {
+        const colNombre = findCol(r, "OBRA", "PROYECTO");
+        const colEstado = findCol(r, "ESTADO");
+        const colEstatus = findCol(r, "ESTATUS");
+        return {
+          nombre:  colNombre  ? r[colNombre]  : "",
+          estado:  colEstado  ? r[colEstado]  : "",
+          estatus: colEstatus ? r[colEstatus] : ""
+        };
+      })
+      .filter(o => o.nombre !== "" && o.estatus !== "Terminada");
 
-    // Personas — columnas: A(0) | B(1 nombre) | C(2 rol) | D(3 tarjeta) | E(4 teléfono) | F(5 notas)
+    // Dedup por nombre de obra (case-insensitive)
+    const obrasSeenNames = new Set();
+    catalog.obras = catalog.obras.filter(o => {
+      const k = o.nombre.toLowerCase();
+      if (obrasSeenNames.has(k)) return false;
+      obrasSeenNames.add(k);
+      return true;
+    });
+    catalog.obras.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+
+    // ── PERSONAS ───────────────────────────────
+    // Hoja: 👤 Personas | Columnas: NOMBRE COMPLETO, ROL, TARJETA OBRA, TELÉFONO, NOTAS
     const wsPer = wb.Sheets["👤 Personas"] || wb.Sheets[wb.SheetNames[1]];
-    catalog.personas = readSheet(wsPer)
-      .map(r => ({
-        nombre:  String(r[1]).trim(),
-        rol:     String(r[2]||"").trim(),
-        tarjeta: String(r[3]||"").trim() === "Sí"
-      }));
+    const personasRaw = sheetToObjectArray(wsPer);
+    catalog.personas = personasRaw
+      .map(r => {
+        const colNombre = findCol(r, "NOMBRE COMPLETO", "NOMBRE");
+        const colRol    = findCol(r, "ROL");
+        return {
+          nombre: colNombre ? r[colNombre] : "",
+          rol:    colRol    ? r[colRol]    : ""
+        };
+      })
+      .filter(p => p.nombre !== "");
 
-    // Tipos — columnas: A(0) | B(1 concepto) | C(2 categoría) | D(3 activo) | E(4 descripción)
+    // Dedup por nombre
+    const personasSeenNames = new Set();
+    catalog.personas = catalog.personas.filter(p => {
+      const k = p.nombre.toLowerCase();
+      if (personasSeenNames.has(k)) return false;
+      personasSeenNames.add(k);
+      return true;
+    });
+    catalog.personas.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+
+    // ── TIPOS DE GASTO ─────────────────────────
+    // Hoja: 📂 Tipos de Gasto | Columnas: CONCEPTO DE GASTO / INGRESO, CATEGORÍA, ACTIVO, DESCRIPCIÓN
     const wsTipos = wb.Sheets["📂 Tipos de Gasto"] || wb.Sheets[wb.SheetNames[2]];
-    catalog.tipos = readSheet(wsTipos)
-      .filter(r => String(r[3]||"").trim() !== "No")
-      .map(r => ({
-        nombre:    String(r[1]).trim(),
-        categoria: String(r[2]||"").trim()
-      }));
+    const tiposRaw = sheetToObjectArray(wsTipos);
+    catalog.tipos = tiposRaw
+      .map(r => {
+        const colConcepto  = findCol(r, "CONCEPTO");
+        const colCategoria = findCol(r, "CATEGOR");
+        const colActivo    = findCol(r, "ACTIVO");
+        return {
+          nombre:    colConcepto  ? r[colConcepto]  : "",
+          categoria: colCategoria ? r[colCategoria] : "",
+          activo:    colActivo    ? r[colActivo]    : "Sí"
+        };
+      })
+      .filter(t => t.nombre !== "" && t.activo.toUpperCase() !== "NO");
 
-    // Proveedores — columnas: A(0) | B(1 nombre) | C(2 tipo) | D(3 límite) | E(4 activo) | F(5 notas)
+    // Dedup por nombre de concepto
+    const tiposSeenNames = new Set();
+    catalog.tipos = catalog.tipos.filter(t => {
+      const k = t.nombre.toLowerCase();
+      if (tiposSeenNames.has(k)) return false;
+      tiposSeenNames.add(k);
+      return true;
+    });
+    catalog.tipos.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+
+    // ── PROVEEDORES ────────────────────────────
+    // Hoja: 🏦 Proveedores | Columnas: PROVEEDOR / CUENTA, TIPO, LÍMITE CRÉDITO, ACTIVO, NOTAS
     const wsProv = wb.Sheets["🏦 Proveedores"] || wb.Sheets[wb.SheetNames[3]];
-    catalog.proveedores = readSheet(wsProv)
-      .filter(r => String(r[4]||"").trim() !== "No")
-      .map(r => ({
-        nombre: String(r[1]).trim(),
-        tipo:   String(r[2]||"").trim()
-      }));
+    const provRaw = sheetToObjectArray(wsProv);
+    catalog.proveedores = provRaw
+      .map(r => {
+        const colNombre = findCol(r, "PROVEEDOR", "CUENTA");
+        const colTipo   = findCol(r, "TIPO");
+        const colActivo = findCol(r, "ACTIVO");
+        return {
+          nombre: colNombre ? r[colNombre] : "",
+          tipo:   colTipo   ? r[colTipo]   : "",
+          activo: colActivo ? r[colActivo] : "Sí"
+        };
+      })
+      .filter(p => p.nombre !== "" && p.activo.toUpperCase() !== "NO");
+
+    // Dedup por nombre
+    const provSeenNames = new Set();
+    catalog.proveedores = catalog.proveedores.filter(p => {
+      const k = p.nombre.toLowerCase();
+      if (provSeenNames.has(k)) return false;
+      provSeenNames.add(k);
+      return true;
+    });
+    catalog.proveedores.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 
     populateDropdowns();
-    if(statusEl) statusEl.textContent = "✅ Catálogos actualizados desde GitHub";
-    if(catInfo)  { catInfo.className = "success"; catInfo.textContent = "✅ Catálogo cargado correctamente desde GitHub. Los desplegables están actualizados."; }
+    if (statusEl) statusEl.textContent = "✅ Catálogos actualizados desde GitHub";
+    if (catInfo)  { catInfo.className = "success"; catInfo.textContent = "✅ Catálogo cargado correctamente desde GitHub. Los desplegables están actualizados."; }
 
-  } catch(e) {
+  } catch (e) {
     console.warn("Catálogo no disponible, usando valores por defecto:", e.message);
     loadFallbackCatalog();
-    if(statusEl) statusEl.textContent = "⚠️ Usando catálogo base — sube catalogo.xlsx a GitHub para personalizarlo";
-    if(catInfo)  catInfo.textContent  = `⚠️ No se encontró el archivo catalogo.xlsx en GitHub. Súbelo a tu repositorio para que los desplegables se actualicen. Error: ${e.message}`;
+    if (statusEl) statusEl.textContent = "⚠️ Usando catálogo base — sube catalogo.xlsx a GitHub para personalizarlo";
+    if (catInfo)  catInfo.textContent  = `⚠️ No se encontró el catálogo en GitHub. Súbelo a tu repositorio para que los desplegables se actualicen. Error: ${e.message}`;
   }
 }
 
+/** Catálogo de respaldo si GitHub no está disponible */
 function loadFallbackCatalog() {
   catalog.obras = [
-    {nombre:"Culiacán",estado:"Sinaloa"},{nombre:"Higueras",estado:"Sinaloa"},
-    {nombre:"Coyotitán",estado:"Sinaloa"},{nombre:"Herradura",estado:"Nuevo León"},
-    {nombre:"Suacero",estado:"San Luis Potosí"},{nombre:"Oficina General",estado:""}
+    { nombre:"Culiacán",    estado:"Sinaloa" },
+    { nombre:"Coyotitán",   estado:"Sinaloa" },
+    { nombre:"Herradura",   estado:"Nuevo León" },
+    { nombre:"Higueras",    estado:"Sinaloa" },
+    { nombre:"Suacero",     estado:"San Luis Potosí" }
   ];
   catalog.personas = [
-    "Hector Villasana","Nancy Vazquez","Emanuel Hernandez",
-    "Juan Manuel","Miguel Ángel Martinez","Miguel Gonzalez","Miguel","Titular / Oficina"
-  ].map(n=>({nombre:n,rol:""}));
+    { nombre:"Emanuel Hernandez",     rol:"Operador" },
+    { nombre:"Hector Villasana",      rol:"Supervisor" },
+    { nombre:"Juan Manuel",           rol:"Supervisor" },
+    { nombre:"Miguel",                rol:"Operador" },
+    { nombre:"Miguel Ángel Martinez", rol:"Operador" },
+    { nombre:"Miguel Gonzalez",       rol:"Operador" },
+    { nombre:"Nancy Vazquez",         rol:"Administración" }
+  ];
   catalog.tipos = [
-    {nombre:"Diesel / Combustible",categoria:"Combustibles"},
-    {nombre:"Aerogas",categoria:"Combustibles"},
-    {nombre:"Refacciones",categoria:"Mantenimiento"},
-    {nombre:"Llantas / Mantenimiento",categoria:"Mantenimiento"},
-    {nombre:"Material Construcción",categoria:"Insumos Obra"},
-    {nombre:"Nómina / Sueldos",categoria:"Operativos"},
-    {nombre:"Viáticos",categoria:"Operativos"},
-    {nombre:"Transporte Emergencia",categoria:"Operativos"},
-    {nombre:"Ingreso de Obra",categoria:"Ingresos"},
-    {nombre:"Colegiatura",categoria:"Gastos Personales"},
-    {nombre:"Restaurante / Comida",categoria:"Gastos Personales"},
-    {nombre:"Vacaciones / Viaje",categoria:"Gastos Personales"},
-    {nombre:"Otro",categoria:"General"},
+    { nombre:"Aerogas",              categoria:"Combustibles" },
+    { nombre:"Anticipo de Cliente",  categoria:"Ingresos" },
+    { nombre:"Colegiatura",          categoria:"Gastos Personales" },
+    { nombre:"Diesel / Combustible", categoria:"Combustibles" },
+    { nombre:"Gasto Personal Otro",  categoria:"Gastos Personales" },
+    { nombre:"Herramienta Menor",    categoria:"Mantenimiento" },
+    { nombre:"Honoriarios Externos", categoria:"Administrativos" },
+    { nombre:"Ingreso de Obra",      categoria:"Ingresos" },
+    { nombre:"Llantas / Mantenimiento", categoria:"Mantenimiento" },
+    { nombre:"Material Construcción",   categoria:"Insumos Obra" },
+    { nombre:"Nómina / Sueldos",     categoria:"Operativos" },
+    { nombre:"Otro",                 categoria:"General" },
+    { nombre:"Papelería / Oficina",  categoria:"Administrativos" },
+    { nombre:"Refacciones",          categoria:"Mantenimiento" },
+    { nombre:"Renta de Equipo",      categoria:"Insumos Obra" },
+    { nombre:"Restaurante / Comida", categoria:"Gastos Personales" },
+    { nombre:"Seguro de Equipo",     categoria:"Administrativos" },
+    { nombre:"Transporte Emergencia",categoria:"Operativos" },
+    { nombre:"Vacaciones / Viaje",   categoria:"Gastos Personales" },
+    { nombre:"Viáticos",             categoria:"Operativos" }
   ];
   catalog.proveedores = [
-    {nombre:"Gaspeed",tipo:"Crédito"},{nombre:"Aerogas",tipo:"Crédito"},
-    {nombre:"Cadeco",tipo:"Crédito"},{nombre:"Volkswagen Leasing",tipo:"Crédito"},
-    {nombre:"Eurollantas",tipo:"Crédito"},
-    {nombre:"Tarjeta Hector Villasana",tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Nancy Vazquez",tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Emanuel Hernandez",tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Juan Manuel",tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Miguel Á. Martinez",tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Miguel Gonzalez",tipo:"Tarjeta Trabajador"},
-    {nombre:"Efectivo",tipo:"Pago directo"},{nombre:"Transferencia",tipo:"Pago directo"},
+    { nombre:"Aerogas",                    tipo:"Crédito — Gas LP" },
+    { nombre:"Cadeco",                     tipo:"Crédito — Refacciones" },
+    { nombre:"Efectivo",                   tipo:"Pago directo" },
+    { nombre:"Eurollantas",                tipo:"Crédito — Llantas" },
+    { nombre:"Gaspeed",                    tipo:"Crédito — Gasolineras" },
+    { nombre:"Tarjeta Emanuel Hernandez",  tipo:"Tarjeta Trabajador" },
+    { nombre:"Tarjeta Hector Villasana",   tipo:"Tarjeta Trabajador" },
+    { nombre:"Tarjeta Juan Manuel",        tipo:"Tarjeta Trabajador" },
+    { nombre:"Tarjeta Miguel Á. Martinez", tipo:"Tarjeta Trabajador" },
+    { nombre:"Tarjeta Miguel Gonzalez",    tipo:"Tarjeta Trabajador" },
+    { nombre:"Tarjeta Nancy Vazquez",      tipo:"Tarjeta Trabajador" },
+    { nombre:"Transferencia",              tipo:"Pago directo" },
+    { nombre:"Volkswagen Leasing",         tipo:"Crédito — Vehículos" }
   ];
   populateDropdowns();
 }
 
+// ── POPULATE DROPDOWNS ─────────────────────────
+/**
+ * Llena todos los desplegables con los datos del catálogo.
+ * Muestra solo NOMBRE (obra / persona / concepto / proveedor).
+ * Agrupa por estado/categoría/tipo usando <optgroup>.
+ * Elimina duplicados automáticamente.
+ */
 function populateDropdowns() {
-  // ── OBRAS: agrupadas por estado, solo muestra el nombre de la obra ──
-  const obraSel = document.getElementById("f-obra-sel");
-  const obraFil = document.getElementById("fil-obra");
+  buildObrasDropdown("f-obra-sel", false);
+  buildObrasDropdown("fil-obra",   true);
+  buildTiposDropdown();
+  buildProveedoresDropdown();
+  buildPersonasDropdown();
+}
 
-  const buildObras = (sel, isFilter) => {
-    sel.innerHTML = `<option value="">${isFilter ? "Todas las obras" : "— Seleccionar de la lista —"}</option>`;
-    const estados = [...new Set(catalog.obras.map(o => o.estado).filter(Boolean))];
-    estados.forEach(est => {
-      const og = document.createElement("optgroup");
-      og.label = "── " + est + " ──";
-      catalog.obras.filter(o => o.estado === est).forEach(o => {
-        og.appendChild(Object.assign(document.createElement("option"), { value: o.nombre, textContent: o.nombre }));
+/** Desplegable de obras agrupado por estado, muestra solo el nombre de la obra */
+function buildObrasDropdown(selId, isFilter) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  sel.innerHTML = `<option value="">${isFilter ? "Todas las obras" : "— Seleccionar de la lista —"}</option>`;
+
+  const estados = dedup(catalog.obras.map(o => o.estado).filter(Boolean)).sort((a, b) => a.localeCompare(b, "es"));
+
+  estados.forEach(est => {
+    const og = document.createElement("optgroup");
+    og.label = "── " + est + " ──";
+    catalog.obras
+      .filter(o => o.estado === est)
+      .forEach(o => {
+        og.appendChild(makeOption(o.nombre, o.nombre));
       });
-      sel.appendChild(og);
-    });
-    // Obras sin estado asignado
-    catalog.obras.filter(o => !o.estado).forEach(o => {
-      sel.appendChild(Object.assign(document.createElement("option"), { value: o.nombre, textContent: o.nombre }));
-    });
-    if (!isFilter) {
-      sel.appendChild(Object.assign(document.createElement("option"), { value: "N/A (Personal)", textContent: "N/A (Personal)" }));
-    }
-  };
+    sel.appendChild(og);
+  });
 
-  if (obraSel) {
-    buildObras(obraSel, false);
-    // Al seleccionar obra, autocompleta el estado
-    obraSel.addEventListener("change", () => {
-      const obraObj = catalog.obras.find(o => o.nombre === obraSel.value);
+  // Obras sin estado asignado
+  catalog.obras.filter(o => !o.estado).forEach(o => {
+    sel.appendChild(makeOption(o.nombre, o.nombre));
+  });
+
+  if (!isFilter) {
+    sel.appendChild(makeOption("N/A (Personal)", "N/A (Personal)"));
+    // Al elegir obra, rellena el campo Estado automáticamente
+    sel.addEventListener("change", () => {
+      const obraObj  = catalog.obras.find(o => o.nombre === sel.value);
       const estadoEl = document.getElementById("f-estado");
-      if (estadoEl && obraObj) estadoEl.value = obraObj.estado || "";
+      if (estadoEl) {
+        estadoEl.value = obraObj ? (obraObj.estado || "") : "";
+        estadoEl.style.color = obraObj ? "var(--dark)" : "var(--muted)";
+      }
     });
   }
-  if (obraFil) buildObras(obraFil, true);
+}
 
-  // ── TIPOS: muestra el nombre del concepto, agrupado por categoría ──
-  const tipoSel = document.getElementById("f-tipo-sel");
-  if (tipoSel) {
-    tipoSel.innerHTML = '<option value="">— Seleccionar de la lista —</option>';
-    const cats = [...new Set(catalog.tipos.map(t => t.categoria).filter(Boolean))];
-    cats.forEach(cat => {
-      const og = document.createElement("optgroup");
-      og.label = cat;
-      catalog.tipos
-        .filter(t => t.categoria === cat)
-        .forEach(t => og.appendChild(Object.assign(document.createElement("option"), { value: t.nombre, textContent: t.nombre })));
-      tipoSel.appendChild(og);
-    });
-    // Tipos sin categoría
-    catalog.tipos.filter(t => !t.categoria).forEach(t => {
-      tipoSel.appendChild(Object.assign(document.createElement("option"), { value: t.nombre, textContent: t.nombre }));
-    });
-  }
+/** Desplegable de tipos de gasto/ingreso agrupado por categoría, muestra solo el concepto */
+function buildTiposDropdown() {
+  const sel = document.getElementById("f-tipo-sel");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Seleccionar de la lista —</option>';
 
-  // ── PROVEEDORES: muestra el nombre, agrupado por tipo de cuenta ──
-  const provSel = document.getElementById("f-prov-sel");
-  if (provSel) {
-    provSel.innerHTML = '<option value="">— Seleccionar —</option>';
-    const tiposProv = [...new Set(catalog.proveedores.map(p => p.tipo).filter(Boolean))];
-    tiposProv.forEach(tipo => {
-      const og = document.createElement("optgroup");
-      og.label = tipo;
-      catalog.proveedores
-        .filter(p => p.tipo === tipo)
-        .forEach(p => og.appendChild(Object.assign(document.createElement("option"), { value: p.nombre, textContent: p.nombre })));
-      provSel.appendChild(og);
-    });
-    // Proveedores sin tipo
-    catalog.proveedores.filter(p => !p.tipo).forEach(p => {
-      provSel.appendChild(Object.assign(document.createElement("option"), { value: p.nombre, textContent: p.nombre }));
-    });
-  }
+  const cats = dedup(catalog.tipos.map(t => t.categoria).filter(Boolean)).sort((a, b) => a.localeCompare(b, "es"));
 
-  // ── PERSONAS: muestra el nombre completo ──
-  const quienSel = document.getElementById("f-quien-sel");
-  if (quienSel) {
-    quienSel.innerHTML = '<option value="">— Seleccionar —</option>';
-    catalog.personas.forEach(p => {
-      quienSel.appendChild(Object.assign(document.createElement("option"), { value: p.nombre, textContent: p.nombre }));
-    });
-  }
+  cats.forEach(cat => {
+    const og = document.createElement("optgroup");
+    og.label = cat;
+    catalog.tipos
+      .filter(t => t.categoria === cat)
+      .forEach(t => og.appendChild(makeOption(t.nombre, t.nombre)));
+    sel.appendChild(og);
+  });
+
+  // Tipos sin categoría
+  catalog.tipos.filter(t => !t.categoria).forEach(t => {
+    sel.appendChild(makeOption(t.nombre, t.nombre));
+  });
+}
+
+/** Desplegable de proveedores agrupado por tipo de cuenta, muestra solo el nombre */
+function buildProveedoresDropdown() {
+  const sel = document.getElementById("f-prov-sel");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Seleccionar —</option>';
+
+  const tipos = dedup(catalog.proveedores.map(p => p.tipo).filter(Boolean)).sort((a, b) => a.localeCompare(b, "es"));
+
+  tipos.forEach(tipo => {
+    const og = document.createElement("optgroup");
+    og.label = tipo;
+    catalog.proveedores
+      .filter(p => p.tipo === tipo)
+      .forEach(p => og.appendChild(makeOption(p.nombre, p.nombre)));
+    sel.appendChild(og);
+  });
+
+  // Proveedores sin tipo
+  catalog.proveedores.filter(p => !p.tipo).forEach(p => {
+    sel.appendChild(makeOption(p.nombre, p.nombre));
+  });
+}
+
+/** Desplegable de personas, muestra el Nombre Completo */
+function buildPersonasDropdown() {
+  const sel = document.getElementById("f-quien-sel");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Seleccionar —</option>';
+  catalog.personas.forEach(p => sel.appendChild(makeOption(p.nombre, p.nombre)));
+}
+
+/** Crea un elemento <option> */
+function makeOption(value, text) {
+  const opt = document.createElement("option");
+  opt.value = value;
+  opt.textContent = text;
+  return opt;
+}
+
+// ── COMBO FIELD ────────────────────────────────
+/**
+ * Vincula un desplegable + campo de texto libre a un campo hidden.
+ * Al seleccionar del desplegable limpia el texto libre; al escribir limpia el desplegable.
+ */
+function setupCombo(selId, txtId, hiddenId) {
+  const sel = document.getElementById(selId);
+  const txt = document.getElementById(txtId);
+  const hid = document.getElementById(hiddenId);
+  if (!sel || !txt || !hid) return;
+
+  sel.addEventListener("change", () => {
+    if (sel.value) { txt.value = ""; hid.value = sel.value; }
+    else           { hid.value = txt.value.trim(); }
+  });
+  txt.addEventListener("input", () => {
+    if (txt.value.trim()) { sel.value = ""; hid.value = txt.value.trim(); }
+    else                  { hid.value = sel.value; }
+  });
 }
 
 // ── NAVIGATION ─────────────────────────────────
@@ -601,13 +779,14 @@ function initNav() {
     btn.addEventListener("click", () => setTab(btn.dataset.tab))
   );
 }
+
 function setTab(tab) {
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
   document.getElementById(`screen-${tab}`).classList.add("active");
   document.querySelector(`.nav-btn[data-tab="${tab}"]`).classList.add("active");
-  if(tab==="resumen")      setTimeout(renderCharts, 50);
-  if(tab==="movimientos")  renderMovimientos();
+  if (tab === "resumen")     setTimeout(renderCharts, 50);
+  if (tab === "movimientos") renderMovimientos();
 }
 
 // ── FIREBASE ────────────────────────────────────
@@ -615,16 +794,18 @@ function listenFirebase() {
   const dot = document.getElementById("sync-dot");
   onValue(dbRef, snap => {
     allRecords = [];
-    snap.forEach(child => allRecords.push({ key:child.key, ...child.val() }));
-    allRecords.sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
+    snap.forEach(child => allRecords.push({ key: child.key, ...child.val() }));
+    allRecords.sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
     updateKPIs();
     renderMovimientos();
-    if(dot) { dot.className="sync-dot ok"; dot.title="Conectado"; }
-  }, () => { if(dot){ dot.className="sync-dot err"; dot.title="Error de conexión"; } });
+    if (dot) { dot.className = "sync-dot ok"; dot.title = "Conectado"; }
+  }, () => {
+    if (dot) { dot.className = "sync-dot err"; dot.title = "Error de conexión"; }
+  });
 }
 
 // ── FORM ────────────────────────────────────────
-function initForm(db, ref, push, remove, update) {
+function initForm() {
   document.getElementById("expense-form").addEventListener("submit", async e => {
     e.preventDefault();
     const tipo  = document.getElementById("f-tipo").value  || document.getElementById("f-tipo-txt").value.trim();
@@ -636,13 +817,14 @@ function initForm(db, ref, push, remove, update) {
     if (!obra) { alert("Selecciona o escribe la obra"); return; }
 
     const record = {
-      fecha: document.getElementById("f-fecha").value,
-      tipo, obra,
+      fecha:       document.getElementById("f-fecha").value,
+      tipo,
+      obra,
       estado:      document.getElementById("f-estado").value.trim(),
       proveedor:   prov,
       quien:       quien,
       clase:       document.getElementById("f-clase").value,
-      monto:       parseFloat(document.getElementById("f-monto").value)||0,
+      monto:       parseFloat(document.getElementById("f-monto").value) || 0,
       descripcion: document.getElementById("f-desc").value.trim(),
       factura:     document.getElementById("f-factura").value.trim(),
       notas:       document.getElementById("f-notas").value.trim(),
@@ -650,10 +832,11 @@ function initForm(db, ref, push, remove, update) {
     };
 
     const btn = document.getElementById("submit-btn");
-    btn.disabled = true; btn.textContent = "Guardando…";
+    btn.disabled = true;
+    btn.textContent = "Guardando…";
     try {
       if (editingKey) {
-        await update(ref(db,`gastos/${editingKey}`), record);
+        await update(ref(db, `gastos/${editingKey}`), record);
         editingKey = null;
         document.getElementById("form-title").textContent = "Nuevo registro";
         document.getElementById("cancel-btn").style.display = "none";
@@ -663,16 +846,17 @@ function initForm(db, ref, push, remove, update) {
         btn.textContent = "✓ Guardado";
       }
       resetForm();
-    } catch(err) {
+    } catch (err) {
       alert("Error al guardar: " + err.message);
       btn.textContent = "💾 Guardar registro";
     }
     btn.disabled = false;
-    setTimeout(()=>{ btn.textContent = "💾 Guardar registro"; }, 2000);
+    setTimeout(() => { btn.textContent = "💾 Guardar registro"; }, 2000);
   });
 
   document.getElementById("cancel-btn").addEventListener("click", () => {
-    editingKey = null; resetForm();
+    editingKey = null;
+    resetForm();
     document.getElementById("form-title").textContent = "Nuevo registro";
     document.getElementById("cancel-btn").style.display = "none";
   });
@@ -682,145 +866,235 @@ function resetForm() {
   document.getElementById("expense-form").reset();
   document.getElementById("f-fecha").value = today();
   document.getElementById("f-clase").value = "Empresa";
-  document.getElementById("c-emp").checked = true;
+  document.getElementById("c-emp").checked  = true;
   document.getElementById("f-estado").value = "";
-  ["f-tipo","f-obra","f-proveedor","f-quien"].forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
+  ["f-tipo", "f-obra", "f-proveedor", "f-quien"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
 }
 
 // ── KPIs ────────────────────────────────────────
 function updateKPIs() {
-  const mes = currentMonth();
-  const thisMes = allRecords.filter(r=>(r.fecha||"").startsWith(mes));
-  const empM  = thisMes.filter(r=>r.clase==="Empresa"&&r.tipo!=="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
-  const perM  = thisMes.filter(r=>r.clase==="Personal").reduce((s,r)=>s+r.monto,0);
-  const dies  = thisMes.filter(r=>["Diesel / Combustible","Aerogas"].includes(r.tipo)).reduce((s,r)=>s+r.monto,0);
-  const ingT  = allRecords.filter(r=>r.tipo==="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
-  const gasT  = allRecords.filter(r=>r.clase==="Empresa"&&r.tipo!=="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
+  const mes    = currentMonth();
+  const thisMes = allRecords.filter(r => (r.fecha || "").startsWith(mes));
+  const empM   = thisMes.filter(r => r.clase === "Empresa" && r.tipo !== "Ingreso de Obra").reduce((s, r) => s + r.monto, 0);
+  const perM   = thisMes.filter(r => r.clase === "Personal").reduce((s, r) => s + r.monto, 0);
+  const dies   = thisMes.filter(r => ["Diesel / Combustible", "Aerogas"].includes(r.tipo)).reduce((s, r) => s + r.monto, 0);
+  const ingT   = allRecords.filter(r => r.tipo === "Ingreso de Obra").reduce((s, r) => s + r.monto, 0);
+  const gasT   = allRecords.filter(r => r.clase === "Empresa" && r.tipo !== "Ingreso de Obra").reduce((s, r) => s + r.monto, 0);
+
   setText("kpi-empresa",  fmt(empM));
   setText("kpi-personal", fmt(perM));
   setText("kpi-diesel",   fmt(dies));
-  const bal = ingT - gasT;
+  const bal   = ingT - gasT;
   const balEl = document.getElementById("kpi-balance");
-  if(balEl){ balEl.textContent=fmt(bal); balEl.style.color=bal>=0?"var(--green)":"var(--red)"; }
-  setText("kpi-registros", thisMes.length+" mov.");
+  if (balEl) { balEl.textContent = fmt(bal); balEl.style.color = bal >= 0 ? "var(--green)" : "var(--red)"; }
+  setText("kpi-registros", thisMes.length + " mov.");
 }
 
 // ── MOVIMIENTOS ────────────────────────────────
 function renderMovimientos() {
-  const fc = document.getElementById("fil-clase")?.value||"";
-  const fo = document.getElementById("fil-obra")?.value||"";
-  const fm = document.getElementById("fil-mes")?.value||"";
+  const fc = document.getElementById("fil-clase")?.value || "";
+  const fo = document.getElementById("fil-obra")?.value  || "";
+  const fm = document.getElementById("fil-mes")?.value   || "";
   let data = [...allRecords];
-  if(fc) data=data.filter(r=>r.clase===fc);
-  if(fo) data=data.filter(r=>r.obra===fo);
-  if(fm) data=data.filter(r=>(r.fecha||"").startsWith(fm));
+  if (fc) data = data.filter(r => r.clase === fc);
+  if (fo) data = data.filter(r => r.obra  === fo);
+  if (fm) data = data.filter(r => (r.fecha || "").startsWith(fm));
+
   const tbody = document.getElementById("tabla-body");
-  if(!tbody) return;
-  if(!data.length){ tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:2rem;color:#888">Sin registros</td></tr>`; return; }
-  tbody.innerHTML = data.map(r=>`
-    <tr class="row-${r.clase==="Empresa"?"emp":"per"}">
-      <td class="fecha-cell">${r.fecha||""}</td>
-      <td><span class="tag ${tipoClass(r.tipo)}">${r.tipo||""}</span></td>
-      <td class="hide-xs" style="font-size:12px">${(r.obra||"").replace(" (SLP)","").replace(" (NL)","").replace(" (SIN)","")}</td>
-      <td class="hide-sm" style="font-size:12px">${r.proveedor||""}</td>
-      <td><span class="badge-clase ${r.clase==="Empresa"?"b-emp":"b-per"}">${r.clase||""}</span></td>
-      <td class="monto-cell ${r.tipo==="Ingreso de Obra"?"pos":""}">${r.tipo==="Ingreso de Obra"?"+":""}${fmt(r.monto)}</td>
-      <td><button class="act-btn" onclick="editRec('${r.key}')">✏️</button><button class="act-btn" onclick="delRec('${r.key}')">🗑</button></td>
+  if (!tbody) return;
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:#888">Sin registros</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(r => `
+    <tr class="row-${r.clase === "Empresa" ? "emp" : "per"}">
+      <td class="fecha-cell">${r.fecha || ""}</td>
+      <td><span class="tag ${tipoClass(r.tipo)}">${r.tipo || ""}</span></td>
+      <td class="hide-xs" style="font-size:12px">${r.obra || ""}</td>
+      <td class="hide-sm" style="font-size:12px">${r.proveedor || ""}</td>
+      <td><span class="badge-clase ${r.clase === "Empresa" ? "b-emp" : "b-per"}">${r.clase || ""}</span></td>
+      <td class="monto-cell ${r.tipo === "Ingreso de Obra" ? "pos" : ""}">${r.tipo === "Ingreso de Obra" ? "+" : ""}${fmt(r.monto)}</td>
+      <td>
+        <button class="act-btn" onclick="editRec('${r.key}')">✏️</button>
+        <button class="act-btn" onclick="delRec('${r.key}')">🗑</button>
+      </td>
     </tr>`).join("");
 }
+
 window.applyFilters = () => renderMovimientos();
+
 window.delRec = async key => {
-  if(!confirm("¿Eliminar este registro?")) return;
-  const { getDatabase:gd, ref:rf, remove:rm } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
-  await rm(ref(db,`gastos/${key}`));
+  if (!confirm("¿Eliminar este registro?")) return;
+  await remove(ref(db, `gastos/${key}`));
 };
+
 window.editRec = key => {
-  const r = allRecords.find(x=>x.key===key); if(!r) return;
-  editingKey = key; setTab("captura");
-  setTimeout(()=>{
-    document.getElementById("f-fecha").value  = r.fecha||"";
-    document.getElementById("f-monto").value  = r.monto||"";
-    document.getElementById("f-desc").value   = r.descripcion||"";
-    document.getElementById("f-factura").value= r.factura||"";
-    document.getElementById("f-notas").value  = r.notas||"";
-    document.getElementById("f-clase").value  = r.clase||"Empresa";
-    // Set combos
-    document.getElementById("f-estado").value  = r.estado||"";
-    setCombo("f-tipo-sel","f-tipo-txt","f-tipo", r.tipo||"");
-    setCombo("f-obra-sel","f-obra-txt","f-obra", r.obra||"");
-    setCombo("f-prov-sel","f-prov-txt","f-proveedor", r.proveedor||"");
-    setCombo("f-quien-sel","f-quien-txt","f-quien", r.quien||"");
-    if(r.clase==="Personal") document.getElementById("c-per").checked=true;
-    else document.getElementById("c-emp").checked=true;
-    document.getElementById("form-title").textContent="Editar registro";
-    document.getElementById("cancel-btn").style.display="flex";
+  const r = allRecords.find(x => x.key === key);
+  if (!r) return;
+  editingKey = key;
+  setTab("captura");
+  setTimeout(() => {
+    document.getElementById("f-fecha").value   = r.fecha   || "";
+    document.getElementById("f-monto").value   = r.monto   || "";
+    document.getElementById("f-desc").value    = r.descripcion || "";
+    document.getElementById("f-factura").value = r.factura  || "";
+    document.getElementById("f-notas").value   = r.notas    || "";
+    document.getElementById("f-clase").value   = r.clase    || "Empresa";
+    document.getElementById("f-estado").value  = r.estado   || "";
+
+    // Restablece combos correctamente (selecciona el valor en el desplegable si existe)
+    setCombo("f-tipo-sel",  "f-tipo-txt",  "f-tipo",       r.tipo      || "");
+    setCombo("f-obra-sel",  "f-obra-txt",  "f-obra",       r.obra      || "");
+    setCombo("f-prov-sel",  "f-prov-txt",  "f-proveedor",  r.proveedor || "");
+    setCombo("f-quien-sel", "f-quien-txt", "f-quien",      r.quien     || "");
+
+    if (r.clase === "Personal") document.getElementById("c-per").checked = true;
+    else                        document.getElementById("c-emp").checked = true;
+
+    document.getElementById("form-title").textContent = "Editar registro";
+    document.getElementById("cancel-btn").style.display = "flex";
   }, 80);
 };
+
+/**
+ * Establece el valor de un combo (select + texto libre).
+ * Si el valor existe en el desplegable lo selecciona; si no, lo pone en el texto libre.
+ */
 function setCombo(selId, txtId, hidId, val) {
-  const sel=document.getElementById(selId), txt=document.getElementById(txtId), hid=document.getElementById(hidId);
-  if(!sel||!txt||!hid) return;
-  const opt = [...sel.options].find(o=>o.value===val);
-  if(opt){ sel.value=val; txt.value=""; }
-  else   { sel.value="";  txt.value=val; }
-  hid.value=val;
+  const sel = document.getElementById(selId);
+  const txt = document.getElementById(txtId);
+  const hid = document.getElementById(hidId);
+  if (!sel || !txt || !hid) return;
+  const opt = [...sel.options].find(o => o.value === val);
+  if (opt) { sel.value = val; txt.value = ""; }
+  else     { sel.value = "";  txt.value = val; }
+  hid.value = val;
 }
 
 // ── CHARTS ─────────────────────────────────────
 function renderCharts() {
   updateKPIs();
-  const COLORS=["#1A2332","#E8A217","#27AE60","#2980B9","#8E44AD","#C0392B","#16A085","#D35400"];
-  const emp=allRecords.filter(r=>r.clase==="Empresa"&&r.tipo!=="Ingreso de Obra");
-  const catMap={};
-  emp.forEach(r=>{ catMap[r.tipo]=(catMap[r.tipo]||0)+r.monto; });
-  const catL=Object.keys(catMap).sort((a,b)=>catMap[b]-catMap[a]).slice(0,8);
+  const COLORS = ["#1A2332","#E8A217","#27AE60","#2980B9","#8E44AD","#C0392B","#16A085","#D35400"];
 
-  const obraMap={};
-  emp.forEach(r=>{ const o=(r.obra||"").replace(/ \((SLP|NL|SIN)\)/,""); obraMap[o]=(obraMap[o]||0)+r.monto; });
-  const obraL=Object.keys(obraMap).sort((a,b)=>obraMap[b]-obraMap[a]);
+  const emp = allRecords.filter(r => r.clase === "Empresa" && r.tipo !== "Ingreso de Obra");
 
-  const empT=emp.reduce((s,r)=>s+r.monto,0);
-  const perT=allRecords.filter(r=>r.clase==="Personal").reduce((s,r)=>s+r.monto,0);
-  const ingT=allRecords.filter(r=>r.tipo==="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
+  // Por categoría de tipo
+  const catMap = {};
+  emp.forEach(r => { catMap[r.tipo] = (catMap[r.tipo] || 0) + r.monto; });
+  const catL = Object.keys(catMap).sort((a, b) => catMap[b] - catMap[a]).slice(0, 8);
 
-  const monthMap={};
-  allRecords.forEach(r=>{
-    if(!r.fecha) return;
-    const m=r.fecha.slice(0,7);
-    if(!monthMap[m]) monthMap[m]={emp:0,per:0,ing:0};
-    if(r.tipo==="Ingreso de Obra") monthMap[m].ing+=r.monto;
-    else if(r.clase==="Empresa")   monthMap[m].emp+=r.monto;
-    else                           monthMap[m].per+=r.monto;
+  // Por obra
+  const obraMap = {};
+  emp.forEach(r => { const o = r.obra || "(sin obra)"; obraMap[o] = (obraMap[o] || 0) + r.monto; });
+  const obraL = Object.keys(obraMap).sort((a, b) => obraMap[b] - obraMap[a]);
+
+  const empT = emp.reduce((s, r) => s + r.monto, 0);
+  const perT = allRecords.filter(r => r.clase === "Personal").reduce((s, r) => s + r.monto, 0);
+  const ingT = allRecords.filter(r => r.tipo === "Ingreso de Obra").reduce((s, r) => s + r.monto, 0);
+
+  const monthMap = {};
+  allRecords.forEach(r => {
+    if (!r.fecha) return;
+    const m = r.fecha.slice(0, 7);
+    if (!monthMap[m]) monthMap[m] = { emp: 0, per: 0, ing: 0 };
+    if (r.tipo === "Ingreso de Obra")     monthMap[m].ing += r.monto;
+    else if (r.clase === "Empresa")       monthMap[m].emp += r.monto;
+    else                                  monthMap[m].per += r.monto;
   });
-  const months=Object.keys(monthMap).sort();
-  const mLabels=months.map(m=>{ const[y,mo]=m.split("-"); return ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][+mo]+" "+y.slice(2); });
+  const months  = Object.keys(monthMap).sort();
+  const mLabels = months.map(m => {
+    const [y, mo] = m.split("-");
+    return ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][+mo] + " " + y.slice(2);
+  });
 
-  const destroy=id=>{ if(charts[id]){ charts[id].destroy(); delete charts[id]; } };
-  destroy("chartCat"); destroy("chartObra"); destroy("chartClase"); destroy("chartTrend");
+  const destroy = id => { if (charts[id]) { charts[id].destroy(); delete charts[id]; } };
+  ["chartCat","chartObra","chartClase","chartTrend"].forEach(destroy);
 
-  const barOpts=()=>({ responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>"$"+fmtK(v)},grid:{color:"#f0f0f0"}},y:{grid:{display:false}}} });
-  const ctx=id=>document.getElementById(id);
+  const barOpts = () => ({
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { callback: v => "$" + fmtK(v) }, grid: { color: "#f0f0f0" } },
+      y: { grid: { display: false } }
+    }
+  });
+  const ctx = id => document.getElementById(id);
 
-  if(ctx("chartCat")) charts["chartCat"]=new Chart(ctx("chartCat"),{type:"bar",data:{labels:catL,datasets:[{data:catL.map(k=>catMap[k]),backgroundColor:COLORS,borderRadius:4}]},options:{...barOpts(),indexAxis:"y"}});
-  if(ctx("chartObra")&&obraL.length) charts["chartObra"]=new Chart(ctx("chartObra"),{type:"doughnut",data:{labels:obraL,datasets:[{data:obraL.map(k=>obraMap[k]),backgroundColor:COLORS,borderWidth:2,borderColor:"#fff"}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}}}}});
-  if(ctx("chartClase")) charts["chartClase"]=new Chart(ctx("chartClase"),{type:"bar",data:{labels:["Empresa","Personal","Ingresos"],datasets:[{data:[empT,perT,ingT],backgroundColor:["#1A2332","#C0392B","#27AE60"],borderRadius:6}]},options:barOpts()});
-  if(ctx("chartTrend")&&months.length) charts["chartTrend"]=new Chart(ctx("chartTrend"),{type:"line",data:{labels:mLabels,datasets:[{label:"Empresa",data:months.map(m=>monthMap[m].emp),borderColor:"#1A2332",backgroundColor:"rgba(26,35,50,.1)",fill:true,tension:.4,pointRadius:4},{label:"Personal",data:months.map(m=>monthMap[m].per),borderColor:"#C0392B",backgroundColor:"rgba(192,57,43,.07)",fill:true,tension:.4,pointRadius:4},{label:"Ingresos",data:months.map(m=>monthMap[m].ing),borderColor:"#27AE60",backgroundColor:"rgba(39,174,96,.07)",fill:true,tension:.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}}},scales:{y:{ticks:{callback:v=>"$"+fmtK(v)},grid:{color:"#f0f0f0"}},x:{grid:{display:false}}}}});
+  if (ctx("chartCat"))
+    charts["chartCat"] = new Chart(ctx("chartCat"), {
+      type: "bar",
+      data: { labels: catL, datasets: [{ data: catL.map(k => catMap[k]), backgroundColor: COLORS, borderRadius: 4 }] },
+      options: { ...barOpts(), indexAxis: "y" }
+    });
+
+  if (ctx("chartObra") && obraL.length)
+    charts["chartObra"] = new Chart(ctx("chartObra"), {
+      type: "doughnut",
+      data: { labels: obraL, datasets: [{ data: obraL.map(k => obraMap[k]), backgroundColor: COLORS, borderWidth: 2, borderColor: "#fff" }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } } }
+    });
+
+  if (ctx("chartClase"))
+    charts["chartClase"] = new Chart(ctx("chartClase"), {
+      type: "bar",
+      data: { labels: ["Empresa","Personal","Ingresos"], datasets: [{ data: [empT, perT, ingT], backgroundColor: ["#1A2332","#C0392B","#27AE60"], borderRadius: 6 }] },
+      options: barOpts()
+    });
+
+  if (ctx("chartTrend") && months.length)
+    charts["chartTrend"] = new Chart(ctx("chartTrend"), {
+      type: "line",
+      data: {
+        labels: mLabels,
+        datasets: [
+          { label: "Empresa", data: months.map(m => monthMap[m].emp), borderColor: "#1A2332", backgroundColor: "rgba(26,35,50,.1)", fill: true, tension: .4, pointRadius: 4 },
+          { label: "Personal", data: months.map(m => monthMap[m].per), borderColor: "#C0392B", backgroundColor: "rgba(192,57,43,.07)", fill: true, tension: .4, pointRadius: 4 },
+          { label: "Ingresos", data: months.map(m => monthMap[m].ing), borderColor: "#27AE60", backgroundColor: "rgba(39,174,96,.07)", fill: true, tension: .4, pointRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } },
+        scales: {
+          y: { ticks: { callback: v => "$" + fmtK(v) }, grid: { color: "#f0f0f0" } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
 }
 
 // ── HELPERS ─────────────────────────────────────
-const today=()=>new Date().toISOString().split("T")[0];
-const currentMonth=()=>new Date().toISOString().slice(0,7);
-const fmt=n=>"$"+(n||0).toLocaleString("es-MX",{minimumFractionDigits:0});
-const fmtK=n=>n>=1000?Math.round(n/1000)+"k":n;
-const setText=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
-function tipoClass(t){
-  const m={"Diesel / Combustible":"t-comb",Aerogas:"t-comb","Nómina / Sueldos":"t-nom",Viáticos:"t-viat","Ingreso de Obra":"t-ing","Colegiatura":"t-per","Restaurante / Comida":"t-per","Vacaciones / Viaje":"t-per"};
-  return m[t]||"t-otro";
+const today        = () => new Date().toISOString().split("T")[0];
+const currentMonth = () => new Date().toISOString().slice(0, 7);
+const fmt          = n  => "$" + (n || 0).toLocaleString("es-MX", { minimumFractionDigits: 0 });
+const fmtK         = n  => n >= 1000 ? Math.round(n / 1000) + "k" : n;
+const setText      = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+/** Asigna clase CSS al tag de tipo de gasto según el concepto */
+function tipoClass(t) {
+  const m = {
+    "Diesel / Combustible": "t-comb",
+    "Aerogas":              "t-comb",
+    "Nómina / Sueldos":     "t-nom",
+    "Viáticos":             "t-viat",
+    "Ingreso de Obra":      "t-ing",
+    "Anticipo de Cliente":  "t-ing",
+    "Colegiatura":          "t-per",
+    "Restaurante / Comida": "t-per",
+    "Vacaciones / Viaje":   "t-per",
+    "Gasto Personal Otro":  "t-per",
+    "Refacciones":          "t-ref"
+  };
+  return m[t] || "t-otro";
 }
 
-// Offline
-window.addEventListener("online",  ()=>{ document.getElementById("offline-toast").style.display="none"; });
-window.addEventListener("offline", ()=>{ document.getElementById("offline-toast").style.display="block"; });
-if("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+// ── OFFLINE ─────────────────────────────────────
+window.addEventListener("online",  () => { document.getElementById("offline-toast").style.display = "none"; });
+window.addEventListener("offline", () => { document.getElementById("offline-toast").style.display = "block"; });
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 </script>
 </body>
 </html>
