@@ -157,6 +157,11 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
           <input type="hidden" id="f-obra"/>
         </div>
 
+        <div class="form-group">
+          <label>Estado</label>
+          <input type="text" id="f-estado" placeholder="Se llena automático al elegir obra, o escribe el estado…" style="color:var(--muted);font-size:13px;"/>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label>Proveedor / Crédito</label>
@@ -344,7 +349,7 @@ let editingKey = null;
 let catalog    = { obras:[], personas:[], tipos:[], proveedores:[] };
 
 // ── GITHUB CONFIG — actualiza con tu usuario y repo ──
-const GITHUB_USER = "amayranidelossantos833-sys";       // ← cambia esto
+const GITHUB_USER = "TU_USUARIO_GITHUB";       // ← cambia esto
 const GITHUB_REPO = "sinaloa-obras";           // ← cambia si usaste otro nombre
 const CAT_FILE    = "catalogo.xlsx";
 const CAT_URL     = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${CAT_FILE}`;
@@ -410,33 +415,49 @@ async function loadCatalog() {
     const buf  = await res.arrayBuffer();
     const wb   = XLSX.read(buf, { type:"array" });
 
-    // Obras
+    // ── helper: lee una hoja y devuelve filas de datos (salta título+nota+encabezado)
+    const readSheet = (ws) => {
+      const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:"" });
+      // Busca la fila de encabezado buscando la que tenga contenido real en col B (índice 1)
+      // Las primeras filas son: 0=título, 1=nota, 2=encabezados, 3+=datos
+      return rows.slice(3).filter(r => String(r[1]||"").trim() !== "");
+    };
+
+    // Obras — columnas: A(0 vacía) | B(1 nombre) | C(2 estado) | D(3 cliente) | E(4 estatus) | F(5 notas)
     const wsObras = wb.Sheets["🏗 Obras"] || wb.Sheets[wb.SheetNames[0]];
-    const obras   = XLSX.utils.sheet_to_json(wsObras, { header:1, defval:"" });
-    catalog.obras = obras.slice(3).filter(r => r[1] && r[3] !== "No").map(r => ({
-      nombre: String(r[1]).trim(), estado: String(r[2]||"").trim(), activo: r[3] !== "Terminada"
-    }));
+    catalog.obras = readSheet(wsObras)
+      .filter(r => String(r[4]||"").trim() !== "Terminada")
+      .map(r => ({
+        nombre: String(r[1]).trim(),
+        estado: String(r[2]||"").trim()
+      }));
 
-    // Personas
-    const wsPer  = wb.Sheets["👤 Personas"] || wb.Sheets[wb.SheetNames[1]];
-    const pers   = XLSX.utils.sheet_to_json(wsPer,  { header:1, defval:"" });
-    catalog.personas = pers.slice(3).filter(r => r[1] && r[3] !== "No").map(r => ({
-      nombre: String(r[1]).trim(), rol: String(r[2]||"").trim(), tarjeta: r[3] === "Sí"
-    }));
+    // Personas — columnas: A(0) | B(1 nombre) | C(2 rol) | D(3 tarjeta) | E(4 teléfono) | F(5 notas)
+    const wsPer = wb.Sheets["👤 Personas"] || wb.Sheets[wb.SheetNames[1]];
+    catalog.personas = readSheet(wsPer)
+      .map(r => ({
+        nombre:  String(r[1]).trim(),
+        rol:     String(r[2]||"").trim(),
+        tarjeta: String(r[3]||"").trim() === "Sí"
+      }));
 
-    // Tipos
+    // Tipos — columnas: A(0) | B(1 concepto) | C(2 categoría) | D(3 activo) | E(4 descripción)
     const wsTipos = wb.Sheets["📂 Tipos de Gasto"] || wb.Sheets[wb.SheetNames[2]];
-    const tipos   = XLSX.utils.sheet_to_json(wsTipos, { header:1, defval:"" });
-    catalog.tipos = tipos.slice(3).filter(r => r[1] && r[3] !== "No").map(r => ({
-      nombre: String(r[1]).trim(), categoria: String(r[2]||"").trim()
-    }));
+    catalog.tipos = readSheet(wsTipos)
+      .filter(r => String(r[3]||"").trim() !== "No")
+      .map(r => ({
+        nombre:    String(r[1]).trim(),
+        categoria: String(r[2]||"").trim()
+      }));
 
-    // Proveedores
+    // Proveedores — columnas: A(0) | B(1 nombre) | C(2 tipo) | D(3 límite) | E(4 activo) | F(5 notas)
     const wsProv = wb.Sheets["🏦 Proveedores"] || wb.Sheets[wb.SheetNames[3]];
-    const provs  = XLSX.utils.sheet_to_json(wsProv, { header:1, defval:"" });
-    catalog.proveedores = provs.slice(3).filter(r => r[1] && r[4] !== "No").map(r => ({
-      nombre: String(r[1]).trim(), tipo: String(r[2]||"").trim()
-    }));
+    catalog.proveedores = readSheet(wsProv)
+      .filter(r => String(r[4]||"").trim() !== "No")
+      .map(r => ({
+        nombre: String(r[1]).trim(),
+        tipo:   String(r[2]||"").trim()
+      }));
 
     populateDropdowns();
     if(statusEl) statusEl.textContent = "✅ Catálogos actualizados desde GitHub";
@@ -491,68 +512,86 @@ function loadFallbackCatalog() {
 }
 
 function populateDropdowns() {
-  // Obras agrupadas por estado
+  // ── OBRAS: agrupadas por estado, solo muestra el nombre de la obra ──
   const obraSel = document.getElementById("f-obra-sel");
   const obraFil = document.getElementById("fil-obra");
-  const estados = [...new Set(catalog.obras.map(o=>o.estado).filter(Boolean))];
-  const buildObras = (sel) => {
-    sel.innerHTML = '<option value="">— Seleccionar de la lista —</option>';
+
+  const buildObras = (sel, isFilter) => {
+    sel.innerHTML = `<option value="">${isFilter ? "Todas las obras" : "— Seleccionar de la lista —"}</option>`;
+    const estados = [...new Set(catalog.obras.map(o => o.estado).filter(Boolean))];
     estados.forEach(est => {
       const og = document.createElement("optgroup");
-      og.label = est;
-      catalog.obras.filter(o=>o.estado===est).forEach(o => {
-        const opt = document.createElement("option");
-        opt.value = o.nombre; opt.textContent = o.nombre;
-        og.appendChild(opt);
+      og.label = "── " + est + " ──";
+      catalog.obras.filter(o => o.estado === est).forEach(o => {
+        og.appendChild(Object.assign(document.createElement("option"), { value: o.nombre, textContent: o.nombre }));
       });
       sel.appendChild(og);
     });
-    // Obras sin estado
-    const sinEst = catalog.obras.filter(o=>!o.estado);
-    if(sinEst.length) {
-      sinEst.forEach(o => {
-        const opt = document.createElement("option");
-        opt.value = o.nombre; opt.textContent = o.nombre;
-        sel.appendChild(opt);
-      });
+    // Obras sin estado asignado
+    catalog.obras.filter(o => !o.estado).forEach(o => {
+      sel.appendChild(Object.assign(document.createElement("option"), { value: o.nombre, textContent: o.nombre }));
+    });
+    if (!isFilter) {
+      sel.appendChild(Object.assign(document.createElement("option"), { value: "N/A (Personal)", textContent: "N/A (Personal)" }));
     }
-    sel.appendChild(Object.assign(document.createElement("option"),{value:"N/A (Personal)",textContent:"N/A (Personal)"}));
   };
-  if(obraSel) buildObras(obraSel);
-  if(obraFil) {
-    obraFil.innerHTML = '<option value="">Todas las obras</option>';
-    catalog.obras.forEach(o => obraFil.appendChild(Object.assign(document.createElement("option"),{value:o.nombre,textContent:o.nombre})));
-  }
 
-  // Tipos agrupados por categoría
+  if (obraSel) {
+    buildObras(obraSel, false);
+    // Al seleccionar obra, autocompleta el estado
+    obraSel.addEventListener("change", () => {
+      const obraObj = catalog.obras.find(o => o.nombre === obraSel.value);
+      const estadoEl = document.getElementById("f-estado");
+      if (estadoEl && obraObj) estadoEl.value = obraObj.estado || "";
+    });
+  }
+  if (obraFil) buildObras(obraFil, true);
+
+  // ── TIPOS: muestra el nombre del concepto, agrupado por categoría ──
   const tipoSel = document.getElementById("f-tipo-sel");
-  if(tipoSel) {
+  if (tipoSel) {
     tipoSel.innerHTML = '<option value="">— Seleccionar de la lista —</option>';
-    const cats = [...new Set(catalog.tipos.map(t=>t.categoria).filter(Boolean))];
+    const cats = [...new Set(catalog.tipos.map(t => t.categoria).filter(Boolean))];
     cats.forEach(cat => {
-      const og = document.createElement("optgroup"); og.label = cat;
-      catalog.tipos.filter(t=>t.categoria===cat).forEach(t => og.appendChild(Object.assign(document.createElement("option"),{value:t.nombre,textContent:t.nombre})));
+      const og = document.createElement("optgroup");
+      og.label = cat;
+      catalog.tipos
+        .filter(t => t.categoria === cat)
+        .forEach(t => og.appendChild(Object.assign(document.createElement("option"), { value: t.nombre, textContent: t.nombre })));
       tipoSel.appendChild(og);
     });
-  }
-
-  // Proveedores
-  const provSel = document.getElementById("f-prov-sel");
-  if(provSel) {
-    provSel.innerHTML = '<option value="">— Seleccionar —</option>';
-    const tipos = [...new Set(catalog.proveedores.map(p=>p.tipo).filter(Boolean))];
-    tipos.forEach(tipo => {
-      const og = document.createElement("optgroup"); og.label = tipo;
-      catalog.proveedores.filter(p=>p.tipo===tipo).forEach(p => og.appendChild(Object.assign(document.createElement("option"),{value:p.nombre,textContent:p.nombre})));
-      provSel.appendChild(og);
+    // Tipos sin categoría
+    catalog.tipos.filter(t => !t.categoria).forEach(t => {
+      tipoSel.appendChild(Object.assign(document.createElement("option"), { value: t.nombre, textContent: t.nombre }));
     });
   }
 
-  // Personas
+  // ── PROVEEDORES: muestra el nombre, agrupado por tipo de cuenta ──
+  const provSel = document.getElementById("f-prov-sel");
+  if (provSel) {
+    provSel.innerHTML = '<option value="">— Seleccionar —</option>';
+    const tiposProv = [...new Set(catalog.proveedores.map(p => p.tipo).filter(Boolean))];
+    tiposProv.forEach(tipo => {
+      const og = document.createElement("optgroup");
+      og.label = tipo;
+      catalog.proveedores
+        .filter(p => p.tipo === tipo)
+        .forEach(p => og.appendChild(Object.assign(document.createElement("option"), { value: p.nombre, textContent: p.nombre })));
+      provSel.appendChild(og);
+    });
+    // Proveedores sin tipo
+    catalog.proveedores.filter(p => !p.tipo).forEach(p => {
+      provSel.appendChild(Object.assign(document.createElement("option"), { value: p.nombre, textContent: p.nombre }));
+    });
+  }
+
+  // ── PERSONAS: muestra el nombre completo ──
   const quienSel = document.getElementById("f-quien-sel");
-  if(quienSel) {
+  if (quienSel) {
     quienSel.innerHTML = '<option value="">— Seleccionar —</option>';
-    catalog.personas.forEach(p => quienSel.appendChild(Object.assign(document.createElement("option"),{value:p.nombre,textContent:p.nombre})));
+    catalog.personas.forEach(p => {
+      quienSel.appendChild(Object.assign(document.createElement("option"), { value: p.nombre, textContent: p.nombre }));
+    });
   }
 }
 
@@ -599,6 +638,7 @@ function initForm(db, ref, push, remove, update) {
     const record = {
       fecha: document.getElementById("f-fecha").value,
       tipo, obra,
+      estado:      document.getElementById("f-estado").value.trim(),
       proveedor:   prov,
       quien:       quien,
       clase:       document.getElementById("f-clase").value,
@@ -643,6 +683,7 @@ function resetForm() {
   document.getElementById("f-fecha").value = today();
   document.getElementById("f-clase").value = "Empresa";
   document.getElementById("c-emp").checked = true;
+  document.getElementById("f-estado").value = "";
   ["f-tipo","f-obra","f-proveedor","f-quien"].forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
 }
 
@@ -704,6 +745,7 @@ window.editRec = key => {
     document.getElementById("f-notas").value  = r.notas||"";
     document.getElementById("f-clase").value  = r.clase||"Empresa";
     // Set combos
+    document.getElementById("f-estado").value  = r.estado||"";
     setCombo("f-tipo-sel","f-tipo-txt","f-tipo", r.tipo||"");
     setCombo("f-obra-sel","f-obra-txt","f-obra", r.obra||"");
     setCombo("f-prov-sel","f-prov-txt","f-proveedor", r.proveedor||"");
