@@ -25,7 +25,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sa
 @media(min-width:900px){.main{padding:1.5rem 2rem}}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;height:var(--nav-h);background:var(--white);border-top:1px solid var(--border);display:flex;align-items:stretch;box-shadow:0 -2px 12px rgba(0,0,0,.06)}
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:transparent;cursor:pointer;font-size:10px;color:var(--muted);font-weight:500;padding:0;-webkit-appearance:none;transition:color .15s}
-.nav-btn .ic{font-size:20px;line-height:1}
+.nav-btn .ic{font-size:22px;line-height:1}
 .nav-btn.active{color:var(--dark)}
 .screen{display:none}.screen.active{display:block}
 .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
@@ -46,7 +46,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--dark)}
 textarea{resize:vertical;min-height:72px}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237F8C9B' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
 .req{color:var(--accent)}
-.libre-hint{font-size:11px;color:var(--muted);margin-top:4px;font-style:italic}
+.libre-input{margin-top:6px;font-size:13px;color:var(--muted)}
 .btn-primary{width:100%;padding:13px;border:none;border-radius:var(--r);background:var(--dark);color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;font-family:inherit}
 .btn-primary:active{background:#0F1620}.btn-primary:disabled{opacity:.6;cursor:default}
 .btn-sec{width:100%;padding:11px;border:1.5px solid var(--border);border-radius:var(--r);background:transparent;color:var(--dark);font-size:14px;font-weight:500;cursor:pointer;margin-top:8px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:inherit}
@@ -78,34 +78,36 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
 .b-emp{background:#D5F5E3;color:#1A5C34}.b-per{background:#FDEDEC;color:#922B21}
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem}
 .filters select{width:auto;flex:1;min-width:120px;padding:8px 32px 8px 10px;font-size:13px}
-.alert{background:#FEF9E7;border-left:3px solid var(--accent);border-radius:0 var(--r) var(--r) 0;padding:10px 14px;font-size:13px;color:#7D6000;margin-bottom:1rem}
-.success{background:#E9F7EF;border-left:3px solid var(--green);border-radius:0 var(--r) var(--r) 0;padding:10px 14px;font-size:13px;color:#1A5C34;margin-bottom:1rem}
-.estado-auto{font-size:11px;color:var(--green);margin-top:3px;display:none}
+.alert-box{background:#FEF9E7;border-left:3px solid var(--accent);border-radius:0 var(--r) var(--r) 0;padding:10px 14px;font-size:13px;color:#7D6000;margin-bottom:1rem}
+.success-box{background:#E9F7EF;border-left:3px solid var(--green);border-radius:0 var(--r) var(--r) 0;padding:10px 14px;font-size:13px;color:#1A5C34;margin-bottom:1rem}
+.estado-hint{font-size:11px;color:var(--green);margin-top:4px;display:none}
 @media(max-width:500px){.hide-xs{display:none}}
 @media(max-width:640px){.hide-sm{display:none}}
-#offline-toast{display:none;position:fixed;bottom:calc(var(--nav-h)+12px);left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 16px;border-radius:999px;font-size:13px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.2)}
-.spinner{display:inline-block;width:14px;height:14px;border:2px solid #ccc;border-top-color:var(--dark);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.cat-status{font-size:11px;color:var(--muted);margin-top:5px;min-height:16px}
+#toast{display:none;position:fixed;bottom:calc(var(--nav-h)+12px);left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.2);white-space:nowrap}
+.cat-status{font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:.5rem;min-height:16px}
 </style>
 </head>
 <body>
-<div id="offline-toast">â ï¸ Sin conexiÃ³n</div>
+
+<div id="toast">Sin conexion</div>
 
 <header class="app-header">
   <div class="header-logo">SC</div>
-  <div><h1>Sinaloa Construcciones</h1><div class="header-sub">Control de gastos de obra</div></div>
-  <div class="sync-dot" id="sync-dot" title="Estado Firebase"></div>
+  <div>
+    <h1>Sinaloa Construcciones</h1>
+    <div class="header-sub">Control de gastos de obra</div>
+  </div>
+  <div class="sync-dot" id="sync-dot" title="Firebase"></div>
 </header>
 
 <main class="main">
 
   <!-- CAPTURA -->
   <div class="screen active" id="screen-captura">
-    <p id="form-title" style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:4px">Nuevo registro</p>
-    <div class="cat-status" id="cat-status">â³ Cargando catÃ¡logosâ¦</div>
+    <p id="form-title" style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:2px">Nuevo registro</p>
+    <div class="cat-status" id="cat-status">Cargando catalogos...</div>
 
-    <div class="card" style="margin-top:.75rem">
+    <div class="card">
       <form id="expense-form" autocomplete="off">
 
         <div class="form-row">
@@ -119,54 +121,55 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
           </div>
         </div>
 
-        <!-- TIPO DE GASTO -->
         <div class="form-group">
           <label>Tipo de gasto <span class="req">*</span></label>
-          <select id="f-tipo-sel"><option value="">â Seleccionar â</option></select>
-          <input type="text" id="f-tipo-libre" placeholder="âï¸ O escribe aquÃ­ si no estÃ¡ en la listaâ¦" style="margin-top:6px;font-size:13px;color:var(--muted)"/>
+          <select id="f-tipo-sel"><option value="">-- Seleccionar tipo --</option></select>
+          <input type="text" id="f-tipo-libre" class="libre-input" placeholder="O escribe aqui si no esta en la lista..."/>
           <input type="hidden" id="f-tipo"/>
         </div>
 
-        <!-- OBRA -->
         <div class="form-group">
           <label>Obra / Proyecto <span class="req">*</span></label>
-          <select id="f-obra-sel"><option value="">â Seleccionar â</option></select>
-          <input type="text" id="f-obra-libre" placeholder="âï¸ O escribe el nombre de la obra aquÃ­â¦" style="margin-top:6px;font-size:13px;color:var(--muted)"/>
+          <select id="f-obra-sel"><option value="">-- Seleccionar obra --</option></select>
+          <input type="text" id="f-obra-libre" class="libre-input" placeholder="O escribe el nombre de la obra..."/>
           <input type="hidden" id="f-obra"/>
-          <div class="estado-auto" id="estado-auto">ð Estado: <strong id="estado-auto-val"></strong></div>
           <input type="hidden" id="f-estado"/>
+          <div class="estado-hint" id="estado-hint">Estado: <strong id="estado-hint-val"></strong></div>
         </div>
 
         <div class="form-row">
-          <!-- PROVEEDOR -->
           <div class="form-group">
-            <label>Proveedor / CrÃ©dito</label>
-            <select id="f-prov-sel"><option value="">â Seleccionar â</option></select>
-            <input type="text" id="f-prov-libre" placeholder="âï¸ O escribe aquÃ­â¦" style="margin-top:6px;font-size:13px;color:var(--muted)"/>
+            <label>Proveedor / Credito</label>
+            <select id="f-prov-sel"><option value="">-- Seleccionar --</option></select>
+            <input type="text" id="f-prov-libre" class="libre-input" placeholder="O escribe aqui..."/>
             <input type="hidden" id="f-proveedor"/>
           </div>
-          <!-- QUIEN -->
           <div class="form-group">
-            <label>QuiÃ©n realizÃ³ el gasto</label>
-            <select id="f-quien-sel"><option value="">â Seleccionar â</option></select>
-            <input type="text" id="f-quien-libre" placeholder="âï¸ O escribe el nombreâ¦" style="margin-top:6px;font-size:13px;color:var(--muted)"/>
+            <label>Quien realizo el gasto</label>
+            <select id="f-quien-sel"><option value="">-- Seleccionar --</option></select>
+            <input type="text" id="f-quien-libre" class="libre-input" placeholder="O escribe el nombre..."/>
             <input type="hidden" id="f-quien"/>
           </div>
         </div>
 
-        <!-- EMPRESA / PERSONAL -->
         <div class="form-group">
           <label>Empresa o Personal <span class="req">*</span></label>
           <div class="clase-toggle">
-            <div><input class="clase-opt" type="radio" name="clase" id="c-emp" value="Empresa" checked/><label class="clase-lbl" for="c-emp">ð Empresa</label></div>
-            <div><input class="clase-opt" type="radio" name="clase" id="c-per" value="Personal"/><label class="clase-lbl" for="c-per">ð¤ Personal</label></div>
+            <div>
+              <input class="clase-opt" type="radio" name="clase" id="c-emp" value="Empresa" checked/>
+              <label class="clase-lbl" for="c-emp">Empresa</label>
+            </div>
+            <div>
+              <input class="clase-opt" type="radio" name="clase" id="c-per" value="Personal"/>
+              <label class="clase-lbl" for="c-per">Personal</label>
+            </div>
           </div>
           <input type="hidden" id="f-clase" value="Empresa"/>
         </div>
 
         <div class="form-group">
-          <label>DescripciÃ³n / Concepto</label>
-          <input type="text" id="f-desc" placeholder="Ej: Carga diesel camiÃ³n 089 â 400 litros"/>
+          <label>Descripcion / Concepto</label>
+          <input type="text" id="f-desc" placeholder="Ej: Carga diesel camion 089 — 400 litros"/>
         </div>
 
         <div class="form-row">
@@ -176,28 +179,31 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
           </div>
           <div class="form-group">
             <label>Notas</label>
-            <input type="text" id="f-notas" placeholder="Observacionesâ¦"/>
+            <input type="text" id="f-notas" placeholder="Observaciones..."/>
           </div>
         </div>
 
-        <button type="submit" class="btn-primary" id="submit-btn">ð¾ Guardar registro</button>
-        <button type="button" class="btn-sec" id="cancel-btn" style="display:none">â Cancelar ediciÃ³n</button>
+        <button type="submit" class="btn-primary" id="submit-btn">Guardar registro</button>
+        <button type="button" class="btn-sec" id="cancel-btn" style="display:none">Cancelar edicion</button>
       </form>
     </div>
-    <div class="alert">ð¡ Si el concepto, obra o proveedor no aparece en la lista, escrÃ­belo directamente en el campo de texto debajo del desplegable.</div>
+
+    <div class="alert-box">
+      Tip: Si el concepto, obra o proveedor no aparece en la lista, escribelo directamente en el campo de texto debajo del desplegable.
+    </div>
   </div>
 
   <!-- RESUMEN -->
   <div class="screen" id="screen-resumen">
     <div class="kpi-grid">
-      <div class="kpi ac"><div class="kpi-label">Gastos empresa (mes)</div><div class="kpi-value" id="kpi-empresa">$0</div><div class="kpi-sub">Clasificados empresa</div></div>
-      <div class="kpi re"><div class="kpi-label">Gastos personales (mes)</div><div class="kpi-value" id="kpi-personal">$0</div><div class="kpi-sub">Clasificados personal</div></div>
+      <div class="kpi ac"><div class="kpi-label">Gastos empresa (mes)</div><div class="kpi-value" id="kpi-empresa">$0</div><div class="kpi-sub">Empresa este mes</div></div>
+      <div class="kpi re"><div class="kpi-label">Gastos personales (mes)</div><div class="kpi-value" id="kpi-personal">$0</div><div class="kpi-sub">Personal este mes</div></div>
       <div class="kpi"><div class="kpi-label">Diesel + Combustible</div><div class="kpi-value" id="kpi-diesel">$0</div><div class="kpi-sub">Mes actual</div></div>
-      <div class="kpi gr"><div class="kpi-label">Balance total</div><div class="kpi-value" id="kpi-balance">$0</div><div class="kpi-sub">Ingresos â Gastos</div></div>
+      <div class="kpi gr"><div class="kpi-label">Balance total</div><div class="kpi-value" id="kpi-balance">$0</div><div class="kpi-sub">Ingresos menos gastos</div></div>
       <div class="kpi bl"><div class="kpi-label">Movimientos</div><div class="kpi-value" id="kpi-registros">0</div><div class="kpi-sub">Este mes</div></div>
     </div>
     <div class="charts-2col">
-      <div class="card"><div class="card-title">Por categorÃ­a</div><div class="chart-wrap"><canvas id="chartCat"></canvas></div></div>
+      <div class="card"><div class="card-title">Por categoria</div><div class="chart-wrap"><canvas id="chartCat"></canvas></div></div>
       <div class="card"><div class="card-title">Por obra</div><div class="chart-wrap"><canvas id="chartObra"></canvas></div></div>
     </div>
     <div class="card"><div class="card-title">Empresa vs Personal vs Ingresos</div><div class="chart-wrap"><canvas id="chartClase"></canvas></div></div>
@@ -224,6 +230,7 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
         <option value="2026-01">Ene 2026</option><option value="2026-02">Feb 2026</option>
         <option value="2026-03">Mar 2026</option><option value="2026-04">Abr 2026</option>
         <option value="2026-05">May 2026</option><option value="2026-06">Jun 2026</option>
+        <option value="2026-07">Jul 2026</option><option value="2026-08">Ago 2026</option>
       </select>
     </div>
     <div class="card" style="padding:0">
@@ -235,51 +242,61 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
             <th class="hide-sm">Proveedor</th>
             <th>Clase</th><th>Monto</th><th></th>
           </tr></thead>
-          <tbody id="tabla-body"><tr><td colspan="7" style="text-align:center;padding:2rem;color:#888">Cargandoâ¦</td></tr></tbody>
+          <tbody id="tabla-body">
+            <tr><td colspan="7" style="text-align:center;padding:2rem;color:#888">Cargando...</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- CONFIG -->
+  <!-- CONFIGURAR -->
   <div class="screen" id="screen-config">
     <div class="card">
-      <div class="card-title">Estado del catÃ¡logo</div>
-      <div id="cat-info" class="alert">Verificando conexiÃ³n con GitHubâ¦</div>
-      <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:1rem">
-        La app lee <strong>catalogo.xlsx</strong> de tu repositorio GitHub cada vez que se abre y llena los desplegables automÃ¡ticamente.
+      <div class="card-title">Estado del catalogo</div>
+      <div id="cat-info" class="alert-box">Verificando conexion con GitHub...</div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6;margin:1rem 0">
+        La app lee <strong>catalogo.xlsx</strong> de tu repositorio GitHub y llena los desplegables automaticamente.
       </p>
-      <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;font-family:monospace;line-height:1.8">
-        ð Repositorio: <strong style="color:var(--blue)">https://github.com/amayranidelossantos833-sys/sinaloa-obras</strong><br/>
-        ð CatÃ¡logo: <strong style="color:var(--blue)">https://raw.githubusercontent.com/amayranidelossantos833-sys/sinaloa-obras/main/catalogo.xlsx</strong>
+      <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;font-family:monospace;line-height:1.9;word-break:break-all">
+        Repositorio: https://github.com/amayranidelossantos833-sys/sinaloa-obras<br/>
+        Catalogo: https://raw.githubusercontent.com/amayranidelossantos833-sys/sinaloa-obras/main/catalogo.xlsx
       </div>
     </div>
+
     <div class="card">
-      <div class="card-title">CÃ³mo actualizar catÃ¡logos</div>
+      <div class="card-title">Actualizar catalogos</div>
       <div style="font-size:13px;line-height:2.2;color:var(--dark)">
-        1ï¸â£ Abre <strong>Catalogo_SinaloaObras.xlsx</strong> y edita lo que necesites<br/>
-        2ï¸â£ GuÃ¡rdalo con el nombre exacto: <code style="background:var(--bg);padding:1px 6px;border-radius:4px">catalogo.xlsx</code><br/>
-        3ï¸â£ Ve a GitHub â tu repositorio â <strong>Add file â Upload files</strong><br/>
-        4ï¸â£ Sube el archivo â <strong>Commit changes</strong><br/>
-        5ï¸â£ Recarga la app â los desplegables se actualizan â
+        1. Abre <strong>Catalogo_SinaloaObras.xlsx</strong> y edita lo que necesites<br/>
+        2. Guardalo con el nombre exacto: <code style="background:var(--bg);padding:1px 6px;border-radius:4px">catalogo.xlsx</code><br/>
+        3. Ve a GitHub — tu repositorio — Add file — Upload files<br/>
+        4. Sube el archivo — Commit changes<br/>
+        5. Recarga la app y los desplegables se actualizan
       </div>
     </div>
+
     <div class="card">
-      <div class="card-title">ð Forzar actualizaciÃ³n</div>
-      <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:1rem">Si la app sigue mostrando una versiÃ³n vieja despuÃ©s de subir cambios a GitHub, usa este botÃ³n.</p>
-      <button onclick="forceUpdate()" class="btn-primary" style="margin-bottom:8px">ð Actualizar app ahora</button>
-      <div id="update-status" style="font-size:12px;color:var(--muted);text-align:center;margin-top:6px"></div>
-      <p style="font-size:11px;color:var(--muted);margin-top:.75rem;line-height:1.7"><strong>PC:</strong> Ctrl+Shift+R Â· <strong>Mac:</strong> Cmd+Shift+R Â· <strong>MÃ³vil:</strong> mantÃ©n presionado el botÃ³n recargar</p>
+      <div class="card-title">Forzar actualizacion</div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:1rem">
+        Si subiste cambios a GitHub pero la app sigue mostrando la version anterior, usa este boton para limpiar el cache.
+      </p>
+      <button onclick="forceUpdate()" class="btn-primary">Actualizar app ahora</button>
+      <div id="update-status" style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px"></div>
+      <p style="font-size:11px;color:var(--muted);margin-top:.75rem;line-height:1.7">
+        PC: Ctrl+Shift+R (Windows) / Cmd+Shift+R (Mac)<br/>
+        iPhone: Safari — manten presionado el boton recargar<br/>
+        Android: Chrome — menu — Recargar
+      </p>
     </div>
   </div>
 
 </main>
 
 <nav class="bottom-nav">
-  <button class="nav-btn active" data-tab="captura"><span class="ic">â</span><span>Captura</span></button>
-  <button class="nav-btn" data-tab="resumen"><span class="ic">ð</span><span>Resumen</span></button>
-  <button class="nav-btn" data-tab="movimientos"><span class="ic">ð</span><span>Movimientos</span></button>
-  <button class="nav-btn" data-tab="config"><span class="ic">âï¸</span><span>Configurar</span></button>
+  <button class="nav-btn active" data-tab="captura"><span class="ic">+</span><span>Captura</span></button>
+  <button class="nav-btn" data-tab="resumen"><span class="ic">≡</span><span>Resumen</span></button>
+  <button class="nav-btn" data-tab="movimientos"><span class="ic">☰</span><span>Movimientos</span></button>
+  <button class="nav-btn" data-tab="config"><span class="ic">⚙</span><span>Configurar</span></button>
 </nav>
 
 <script type="module">
@@ -301,26 +318,16 @@ const fbApp = initializeApp(firebaseConfig);
 const db    = getDatabase(fbApp);
 const dbRef = ref(db, "gastos");
 
-// ââ Estado global ââââââââââââââââââââââââââââââ
 let allRecords = [];
 let charts     = {};
 let editingKey = null;
-
-// CatÃ¡logo en memoria â estructura exacta del Excel
-// Excel: col A = None(0), col B = dato(1), col C = dato(2), ...
-// Fila 1=tÃ­tulo, 2=nota, 3=encabezados, 4+=datos
-let cat = {
-  obras:       [],   // [{nombre, estado}]
-  personas:    [],   // [{nombre, rol}]
-  tipos:       [],   // [{nombre, categoria}]
-  proveedores: []    // [{nombre, tipo}]
-};
+let cat = { obras:[], personas:[], tipos:[], proveedores:[] };
 
 const GITHUB_RAW = "https://raw.githubusercontent.com/amayranidelossantos833-sys/sinaloa-obras/main/catalogo.xlsx";
 
-// ââ ARRANQUE âââââââââââââââââââââââââââââââââââ
+// ── ARRANQUE ────────────────────────────────────
 window.addEventListener("DOMContentLoaded", async () => {
-  setToday();
+  document.getElementById("f-fecha").value = todayStr();
   initClaseToggle();
   initCombos();
   initNav();
@@ -329,273 +336,264 @@ window.addEventListener("DOMContentLoaded", async () => {
   await loadCatalog();
 });
 
-function setToday() {
-  document.getElementById("f-fecha").value = new Date().toISOString().split("T")[0];
-}
-
-// ââ COMBOS: desplegable + texto libre ââââââââââ
-// Regla: si usas el desplegable, limpia el texto; si escribes texto, limpia el desplegable
-// El valor final siempre va al hidden input
+// ── COMBOS ──────────────────────────────────────
+// Cada campo tiene: <select> + <input texto libre> + <input hidden>
+// Si seleccionas el select => limpia texto libre, hidden = valor select
+// Si escribes en texto libre => limpia select, hidden = texto libre
 function initCombos() {
-  const pairs = [
-    ["f-tipo-sel",  "f-tipo-libre",  "f-tipo"],
-    ["f-obra-sel",  "f-obra-libre",  "f-obra"],
-    ["f-prov-sel",  "f-prov-libre",  "f-proveedor"],
-    ["f-quien-sel", "f-quien-libre", "f-quien"],
-  ];
-  pairs.forEach(([selId, libreId, hidId]) => {
-    const sel  = document.getElementById(selId);
-    const lib  = document.getElementById(libreId);
-    const hid  = document.getElementById(hidId);
+  [
+    ["f-tipo-sel", "f-tipo-libre", "f-tipo", null],
+    ["f-obra-sel", "f-obra-libre", "f-obra", onObraChange],
+    ["f-prov-sel", "f-prov-libre", "f-proveedor", null],
+    ["f-quien-sel","f-quien-libre","f-quien", null],
+  ].forEach(([selId, libId, hidId, onChange]) => {
+    const sel = document.getElementById(selId);
+    const lib = document.getElementById(libId);
+    const hid = document.getElementById(hidId);
     if (!sel || !lib || !hid) return;
 
     sel.addEventListener("change", () => {
       if (sel.value) {
-        lib.value = "";          // limpia texto libre
+        lib.value = "";
         hid.value = sel.value;
-        if (selId === "f-obra-sel") autoFillEstado(sel.value);
       } else {
         hid.value = lib.value.trim();
       }
+      if (onChange) onChange(sel.value);
     });
 
     lib.addEventListener("input", () => {
       const v = lib.value.trim();
       if (v) {
-        sel.value = "";          // limpia desplegable
+        sel.value = "";
         hid.value = v;
-        if (libreId === "f-obra-libre") autoFillEstado("");
       } else {
         hid.value = sel.value;
       }
+      if (onChange) onChange("");
     });
   });
 }
 
-function autoFillEstado(obraNombre) {
-  const obraObj  = cat.obras.find(o => o.nombre === obraNombre);
-  const hidEstado = document.getElementById("f-estado");
-  const autoDiv   = document.getElementById("estado-auto");
-  const autoVal   = document.getElementById("estado-auto-val");
-  if (obraObj && obraObj.estado) {
-    hidEstado.value  = obraObj.estado;
-    autoVal.textContent = obraObj.estado;
-    autoDiv.style.display = "block";
+function onObraChange(obraNombre) {
+  const obj   = cat.obras.find(o => o.nombre === obraNombre);
+  const hid   = document.getElementById("f-estado");
+  const hint  = document.getElementById("estado-hint");
+  const hval  = document.getElementById("estado-hint-val");
+  if (obj && obj.estado) {
+    hid.value = obj.estado;
+    hval.textContent = obj.estado;
+    hint.style.display = "block";
   } else {
-    hidEstado.value = "";
-    autoDiv.style.display = "none";
+    hid.value = "";
+    hint.style.display = "none";
   }
 }
 
-// ââ CARGA DEL CATÃLOGO âââââââââââââââââââââââââ
+// ── CATALOGO GITHUB ─────────────────────────────
 async function loadCatalog() {
   const statusEl = document.getElementById("cat-status");
   const infoEl   = document.getElementById("cat-info");
 
   try {
-    if (statusEl) statusEl.innerHTML = '<span class="spinner"></span>Cargando catÃ¡logosâ¦';
-
-    const res = await fetch(GITHUB_RAW + "?nocache=" + Date.now());
-    if (!res.ok) throw new Error(`HTTP ${res.status} â archivo no encontrado en GitHub`);
-
+    statusEl.textContent = "Cargando catalogos desde GitHub...";
+    const res = await fetch(GITHUB_RAW + "?t=" + Date.now());
+    if (!res.ok) throw new Error("HTTP " + res.status);
     const buf = await res.arrayBuffer();
     const wb  = XLSX.read(buf, { type: "array" });
 
-    // ââ OBRAS ââââââââââââââââââââââââââââââââââ
-    // Estructura confirmada: fila1=tÃ­tulo, fila2=nota, fila3=encabezados, fila4+=datos
-    // Columnas: [0]=vacÃ­o  [1]=OBRA  [2]=ESTADO  [3]=CLIENTE  [4]=ESTATUS  [5]=NOTAS
-    const wsObras = wb.Sheets[wb.SheetNames[0]];
-    const rowsObras = XLSX.utils.sheet_to_json(wsObras, { header: 1, defval: "" });
-    cat.obras = rowsObras
-      .slice(3)                                         // salta tÃ­tulo+nota+encabezados
-      .filter(r => String(r[1] || "").trim() !== "")   // col B = nombre obra
-      .filter(r => String(r[4] || "").trim() !== "Terminada") // col E = estatus
-      .map(r => ({
-        nombre: String(r[1]).trim(),                    // col B
-        estado: String(r[2] || "").trim()               // col C
-      }));
+    // Estructura del Excel (verificada):
+    // Fila 1 = titulo, Fila 2 = nota, Fila 3 = encabezados, Fila 4+ = datos
+    // Columna A(idx 0) = vacia, Columna B(idx 1) = dato principal
 
-    // ââ PERSONAS âââââââââââââââââââââââââââââââ
-    // Columnas: [0]=vacÃ­o  [1]=NOMBRE  [2]=ROL  [3]=TARJETA  [4]=TELÃFONO  [5]=NOTAS
-    const wsPer = wb.Sheets[wb.SheetNames[1]];
-    const rowsPer = XLSX.utils.sheet_to_json(wsPer, { header: 1, defval: "" });
-    cat.personas = rowsPer
-      .slice(3)
-      .filter(r => String(r[1] || "").trim() !== "")   // col B = nombre
-      .map(r => ({
-        nombre: String(r[1]).trim(),                    // col B
-        rol:    String(r[2] || "").trim()               // col C
-      }));
+    // OBRAS: B=nombre, C=estado, D=cliente, E=estatus
+    const rowsObras = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:""});
+    cat.obras = rowsObras.slice(3)
+      .filter(r => String(r[1]||"").trim() !== "")
+      .filter(r => String(r[4]||"").trim() !== "Terminada")
+      .map(r => ({ nombre: String(r[1]).trim(), estado: String(r[2]||"").trim() }));
 
-    // ââ TIPOS DE GASTO âââââââââââââââââââââââââ
-    // Columnas: [0]=vacÃ­o  [1]=CONCEPTO  [2]=CATEGORÃA  [3]=ACTIVO  [4]=DESCRIPCIÃN
-    const wsTipos = wb.Sheets[wb.SheetNames[2]];
-    const rowsTipos = XLSX.utils.sheet_to_json(wsTipos, { header: 1, defval: "" });
-    cat.tipos = rowsTipos
-      .slice(3)
-      .filter(r => String(r[1] || "").trim() !== "")   // col B = concepto
-      .filter(r => String(r[3] || "").trim() !== "No") // col D = activo
-      .map(r => ({
-        nombre:    String(r[1]).trim(),                 // col B
-        categoria: String(r[2] || "").trim()            // col C
-      }));
+    // PERSONAS: B=nombre, C=rol, D=tarjeta
+    const rowsPer = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[1]], {header:1, defval:""});
+    cat.personas = rowsPer.slice(3)
+      .filter(r => String(r[1]||"").trim() !== "")
+      .map(r => ({ nombre: String(r[1]).trim(), rol: String(r[2]||"").trim() }));
 
-    // ââ PROVEEDORES ââââââââââââââââââââââââââââ
-    // Columnas: [0]=vacÃ­o  [1]=PROVEEDOR  [2]=TIPO  [3]=LÃMITE  [4]=ACTIVO  [5]=NOTAS
-    const wsProv = wb.Sheets[wb.SheetNames[3]];
-    const rowsProv = XLSX.utils.sheet_to_json(wsProv, { header: 1, defval: "" });
-    cat.proveedores = rowsProv
-      .slice(3)
-      .filter(r => String(r[1] || "").trim() !== "")   // col B = nombre proveedor
-      .filter(r => String(r[4] || "").trim() !== "No") // col E = activo
-      .map(r => ({
-        nombre: String(r[1]).trim(),                    // col B
-        tipo:   String(r[2] || "").trim()               // col C
-      }));
+    // TIPOS: B=concepto, C=categoria, D=activo
+    const rowsTipos = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[2]], {header:1, defval:""});
+    cat.tipos = rowsTipos.slice(3)
+      .filter(r => String(r[1]||"").trim() !== "")
+      .filter(r => String(r[3]||"").trim() !== "No")
+      .map(r => ({ nombre: String(r[1]).trim(), categoria: String(r[2]||"").trim() }));
+
+    // PROVEEDORES: B=nombre, C=tipo, D=limite, E=activo
+    const rowsProv = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[3]], {header:1, defval:""});
+    cat.proveedores = rowsProv.slice(3)
+      .filter(r => String(r[1]||"").trim() !== "")
+      .filter(r => String(r[4]||"").trim() !== "No")
+      .map(r => ({ nombre: String(r[1]).trim(), tipo: String(r[2]||"").trim() }));
 
     fillDropdowns();
-
-    if (statusEl) statusEl.textContent = `â CatÃ¡logos cargados â ${cat.obras.length} obras Â· ${cat.personas.length} personas Â· ${cat.tipos.length} tipos Â· ${cat.proveedores.length} proveedores`;
-    if (infoEl)  { infoEl.className = "success"; infoEl.textContent = "â CatÃ¡logo cargado correctamente desde GitHub."; }
+    statusEl.textContent = "Catalogos listos: " + cat.obras.length + " obras, " + cat.personas.length + " personas, " + cat.tipos.length + " tipos.";
+    if (infoEl) { infoEl.className = "success-box"; infoEl.textContent = "Catalogo cargado correctamente desde GitHub."; }
 
   } catch (err) {
-    console.warn("Error cargando catÃ¡logo:", err.message);
+    console.warn("Catalogo no disponible:", err.message);
     useFallback();
-    if (statusEl) statusEl.textContent = "â ï¸ Usando catÃ¡logo local â sube catalogo.xlsx a GitHub para actualizarlo";
-    if (infoEl)   infoEl.textContent   = "â ï¸ No se encontrÃ³ catalogo.xlsx en GitHub. Error: " + err.message;
+    statusEl.textContent = "Usando catalogo local (sube catalogo.xlsx a GitHub para actualizar).";
+    if (infoEl) infoEl.textContent = "No se encontro catalogo.xlsx en GitHub. Error: " + err.message;
   }
 }
 
-// Valores por defecto si no hay catÃ¡logo en GitHub
 function useFallback() {
   cat.obras = [
-    {nombre:"CuliacÃ¡n",estado:"Sinaloa"},{nombre:"Higueras",estado:"Sinaloa"},
-    {nombre:"CoyotitÃ¡n",estado:"Sinaloa"},{nombre:"Herradura",estado:"Nuevo LeÃ³n"},
-    {nombre:"Suacero",estado:"San Luis PotosÃ­"},{nombre:"Oficina General",estado:""}
+    {nombre:"Culiacan", estado:"Sinaloa"},
+    {nombre:"Higueras", estado:"Sinaloa"},
+    {nombre:"Coyotitan", estado:"Sinaloa"},
+    {nombre:"Herradura", estado:"Nuevo Leon"},
+    {nombre:"Suacero", estado:"San Luis Potosi"},
+    {nombre:"Oficina General", estado:""}
   ];
   cat.personas = [
-    {nombre:"Hector Villasana",rol:"Supervisor"},{nombre:"Nancy Vazquez",rol:"AdministraciÃ³n"},
-    {nombre:"Emanuel Hernandez",rol:"Operador"},{nombre:"Juan Manuel",rol:"Supervisor"},
-    {nombre:"Miguel Ãngel Martinez",rol:"Operador"},{nombre:"Miguel Gonzalez",rol:"Operador"},
-    {nombre:"Miguel",rol:"Operador"},{nombre:"Titular / Oficina",rol:""}
+    {nombre:"Hector Villasana"},{nombre:"Nancy Vazquez"},
+    {nombre:"Emanuel Hernandez"},{nombre:"Juan Manuel"},
+    {nombre:"Miguel Angel Martinez"},{nombre:"Miguel Gonzalez"},
+    {nombre:"Miguel"},{nombre:"Titular / Oficina"}
   ];
   cat.tipos = [
-    {nombre:"Diesel / Combustible",categoria:"Combustibles"},{nombre:"Aerogas",categoria:"Combustibles"},
-    {nombre:"Refacciones",categoria:"Mantenimiento"},{nombre:"Llantas / Mantenimiento",categoria:"Mantenimiento"},
-    {nombre:"Herramienta Menor",categoria:"Mantenimiento"},{nombre:"Material ConstrucciÃ³n",categoria:"Insumos Obra"},
-    {nombre:"NÃ³mina / Sueldos",categoria:"Operativos"},{nombre:"ViÃ¡ticos",categoria:"Operativos"},
-    {nombre:"Transporte Emergencia",categoria:"Operativos"},{nombre:"Ingreso de Obra",categoria:"Ingresos"},
-    {nombre:"Colegiatura",categoria:"Gastos Personales"},{nombre:"Restaurante / Comida",categoria:"Gastos Personales"},
-    {nombre:"Vacaciones / Viaje",categoria:"Gastos Personales"},{nombre:"Otro",categoria:"General"}
+    {nombre:"Diesel / Combustible", categoria:"Combustibles"},
+    {nombre:"Aerogas", categoria:"Combustibles"},
+    {nombre:"Refacciones", categoria:"Mantenimiento"},
+    {nombre:"Llantas / Mantenimiento", categoria:"Mantenimiento"},
+    {nombre:"Herramienta Menor", categoria:"Mantenimiento"},
+    {nombre:"Material Construccion", categoria:"Insumos Obra"},
+    {nombre:"Nomina / Sueldos", categoria:"Operativos"},
+    {nombre:"Viaticos", categoria:"Operativos"},
+    {nombre:"Transporte Emergencia", categoria:"Operativos"},
+    {nombre:"Ingreso de Obra", categoria:"Ingresos"},
+    {nombre:"Colegiatura", categoria:"Gastos Personales"},
+    {nombre:"Restaurante / Comida", categoria:"Gastos Personales"},
+    {nombre:"Vacaciones / Viaje", categoria:"Gastos Personales"},
+    {nombre:"Otro", categoria:"General"}
   ];
   cat.proveedores = [
-    {nombre:"Gaspeed",tipo:"CrÃ©dito â Gasolineras"},{nombre:"Aerogas",tipo:"CrÃ©dito â Gas LP"},
-    {nombre:"Cadeco",tipo:"CrÃ©dito â Refacciones"},{nombre:"Volkswagen Leasing",tipo:"CrÃ©dito â VehÃ­culos"},
-    {nombre:"Eurollantas",tipo:"CrÃ©dito â Llantas"},
-    {nombre:"Tarjeta Hector Villasana",tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Nancy Vazquez",tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Emanuel Hernandez",tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Juan Manuel",tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Miguel Ã. Martinez",tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Miguel Gonzalez",tipo:"Tarjeta Trabajador"},
-    {nombre:"Efectivo",tipo:"Pago directo"},{nombre:"Transferencia",tipo:"Pago directo"}
+    {nombre:"Gaspeed", tipo:"Credito — Gasolineras"},
+    {nombre:"Aerogas", tipo:"Credito — Gas LP"},
+    {nombre:"Cadeco", tipo:"Credito — Refacciones"},
+    {nombre:"Volkswagen Leasing", tipo:"Credito — Vehiculos"},
+    {nombre:"Eurollantas", tipo:"Credito — Llantas"},
+    {nombre:"Tarjeta Hector Villasana", tipo:"Tarjeta Trabajador"},
+    {nombre:"Tarjeta Nancy Vazquez", tipo:"Tarjeta Trabajador"},
+    {nombre:"Tarjeta Emanuel Hernandez", tipo:"Tarjeta Trabajador"},
+    {nombre:"Tarjeta Juan Manuel", tipo:"Tarjeta Trabajador"},
+    {nombre:"Tarjeta Miguel Martinez", tipo:"Tarjeta Trabajador"},
+    {nombre:"Tarjeta Miguel Gonzalez", tipo:"Tarjeta Trabajador"},
+    {nombre:"Efectivo", tipo:"Pago directo"},
+    {nombre:"Transferencia", tipo:"Pago directo"}
   ];
   fillDropdowns();
 }
 
-// ââ LLENA DESPLEGABLES âââââââââââââââââââââââââ
+// ── LLENA DESPLEGABLES ───────────────────────────
 function fillDropdowns() {
-  // OBRAS â agrupa por estado, muestra solo el nombre de la obra
+  // OBRAS — agrupadas por estado, muestra solo nombre de la obra
   const obraSel = document.getElementById("f-obra-sel");
   const obraFil = document.getElementById("fil-obra");
   if (obraSel) {
-    obraSel.innerHTML = '<option value="">â Seleccionar obra â</option>';
+    obraSel.innerHTML = '<option value="">-- Seleccionar obra --</option>';
     const estados = [...new Set(cat.obras.map(o => o.estado).filter(Boolean))];
     estados.forEach(est => {
       const og = document.createElement("optgroup");
-      og.label = est;                                   // encabezado de grupo = estado
+      og.label = est;
       cat.obras.filter(o => o.estado === est).forEach(o => {
-        obraSel.appendChild(Object.assign(document.createElement("option"), {
-          value: o.nombre, textContent: o.nombre       // valor y texto = nombre de la obra
-        }));
-      });
-      obraSel.appendChild(og);
-      // NOTA: appended optgroup despuÃ©s â reordenamos para que funcione
-    });
-    // Reconstruir correctamente con optgroup
-    obraSel.innerHTML = '<option value="">â Seleccionar obra â</option>';
-    estados.forEach(est => {
-      const og = document.createElement("optgroup"); og.label = est;
-      cat.obras.filter(o => o.estado === est).forEach(o => {
-        og.appendChild(Object.assign(document.createElement("option"), { value: o.nombre, textContent: o.nombre }));
+        const op = document.createElement("option");
+        op.value = o.nombre; op.textContent = o.nombre;
+        og.appendChild(op);
       });
       obraSel.appendChild(og);
     });
     cat.obras.filter(o => !o.estado).forEach(o => {
-      obraSel.appendChild(Object.assign(document.createElement("option"), { value: o.nombre, textContent: o.nombre }));
+      const op = document.createElement("option");
+      op.value = o.nombre; op.textContent = o.nombre;
+      obraSel.appendChild(op);
     });
-    obraSel.appendChild(Object.assign(document.createElement("option"), { value: "N/A (Personal)", textContent: "N/A (Personal)" }));
-
-    // Re-bind autocomplete estado tras llenar
-    obraSel.addEventListener("change", () => autoFillEstado(obraSel.value));
+    const opNA = document.createElement("option");
+    opNA.value = "N/A Personal"; opNA.textContent = "N/A Personal";
+    obraSel.appendChild(opNA);
   }
   if (obraFil) {
     obraFil.innerHTML = '<option value="">Todas las obras</option>';
-    cat.obras.forEach(o => obraFil.appendChild(Object.assign(document.createElement("option"), { value: o.nombre, textContent: o.nombre })));
+    cat.obras.forEach(o => {
+      const op = document.createElement("option");
+      op.value = o.nombre; op.textContent = o.nombre;
+      obraFil.appendChild(op);
+    });
   }
 
-  // TIPOS â agrupa por categorÃ­a, muestra el nombre del concepto
+  // TIPOS — agrupados por categoria, muestra nombre del concepto
   const tipoSel = document.getElementById("f-tipo-sel");
   if (tipoSel) {
-    tipoSel.innerHTML = '<option value="">â Seleccionar tipo â</option>';
+    tipoSel.innerHTML = '<option value="">-- Seleccionar tipo --</option>';
     const cats = [...new Set(cat.tipos.map(t => t.categoria).filter(Boolean))];
     cats.forEach(c => {
       const og = document.createElement("optgroup"); og.label = c;
       cat.tipos.filter(t => t.categoria === c).forEach(t => {
-        og.appendChild(Object.assign(document.createElement("option"), { value: t.nombre, textContent: t.nombre }));
+        const op = document.createElement("option");
+        op.value = t.nombre; op.textContent = t.nombre;
+        og.appendChild(op);
       });
       tipoSel.appendChild(og);
     });
     cat.tipos.filter(t => !t.categoria).forEach(t => {
-      tipoSel.appendChild(Object.assign(document.createElement("option"), { value: t.nombre, textContent: t.nombre }));
+      const op = document.createElement("option");
+      op.value = t.nombre; op.textContent = t.nombre;
+      tipoSel.appendChild(op);
     });
   }
 
-  // PROVEEDORES â agrupa por tipo de cuenta, muestra el nombre del proveedor
+  // PROVEEDORES — agrupados por tipo, muestra nombre del proveedor
   const provSel = document.getElementById("f-prov-sel");
   if (provSel) {
-    provSel.innerHTML = '<option value="">â Seleccionar proveedor â</option>';
+    provSel.innerHTML = '<option value="">-- Seleccionar --</option>';
     const tipos = [...new Set(cat.proveedores.map(p => p.tipo).filter(Boolean))];
     tipos.forEach(t => {
       const og = document.createElement("optgroup"); og.label = t;
       cat.proveedores.filter(p => p.tipo === t).forEach(p => {
-        og.appendChild(Object.assign(document.createElement("option"), { value: p.nombre, textContent: p.nombre }));
+        const op = document.createElement("option");
+        op.value = p.nombre; op.textContent = p.nombre;
+        og.appendChild(op);
       });
       provSel.appendChild(og);
     });
     cat.proveedores.filter(p => !p.tipo).forEach(p => {
-      provSel.appendChild(Object.assign(document.createElement("option"), { value: p.nombre, textContent: p.nombre }));
+      const op = document.createElement("option");
+      op.value = p.nombre; op.textContent = p.nombre;
+      provSel.appendChild(op);
     });
   }
 
-  // PERSONAS â lista simple con nombre completo
+  // PERSONAS — lista simple con nombre completo
   const quienSel = document.getElementById("f-quien-sel");
   if (quienSel) {
-    quienSel.innerHTML = '<option value="">â Seleccionar persona â</option>';
+    quienSel.innerHTML = '<option value="">-- Seleccionar --</option>';
     cat.personas.forEach(p => {
-      quienSel.appendChild(Object.assign(document.createElement("option"), { value: p.nombre, textContent: p.nombre }));
+      const op = document.createElement("option");
+      op.value = p.nombre; op.textContent = p.nombre;
+      quienSel.appendChild(op);
     });
   }
 }
 
-// ââ CLASE TOGGLE âââââââââââââââââââââââââââââââ
+// ── CLASE TOGGLE ─────────────────────────────────
 function initClaseToggle() {
   document.querySelectorAll(".clase-opt").forEach(r =>
-    r.addEventListener("change", () => document.getElementById("f-clase").value = r.value)
+    r.addEventListener("change", () => {
+      document.getElementById("f-clase").value = r.value;
+    })
   );
 }
 
-// ââ NAVEGACIÃN âââââââââââââââââââââââââââââââââ
+// ── NAVEGACION ───────────────────────────────────
 function initNav() {
   document.querySelectorAll(".nav-btn").forEach(btn =>
     btn.addEventListener("click", () => setTab(btn.dataset.tab))
@@ -610,7 +608,7 @@ function setTab(tab) {
   if (tab === "movimientos") renderMovimientos();
 }
 
-// ââ FIREBASE LISTENER ââââââââââââââââââââââââââ
+// ── FIREBASE ─────────────────────────────────────
 function listenFirebase() {
   const dot = document.getElementById("sync-dot");
   onValue(dbRef, snap => {
@@ -620,33 +618,29 @@ function listenFirebase() {
     updateKPIs();
     renderMovimientos();
     if (document.getElementById("screen-resumen").classList.contains("active")) renderCharts();
-    if (dot) { dot.className = "sync-dot ok"; dot.title = "Conectado · " + allRecords.length + " registros"; }
+    if (dot) { dot.className = "sync-dot ok"; dot.title = "Conectado — " + allRecords.length + " registros"; }
   }, () => {
-    if (dot) { dot.className = "sync-dot err"; dot.title = "Error de conexión Firebase"; }
+    if (dot) { dot.className = "sync-dot err"; dot.title = "Error de conexion"; }
   });
 }
 
-// ââ FORMULARIO âââââââââââââââââââââââââââââââââ
+// ── FORMULARIO ───────────────────────────────────
 function initForm() {
   document.getElementById("expense-form").addEventListener("submit", async e => {
     e.preventDefault();
-
-    // Resuelve valor: primero el hidden (seteado por combo), luego el texto libre directo
-    const getTipo  = () => document.getElementById("f-tipo").value  || document.getElementById("f-tipo-libre").value.trim();
-    const getObra  = () => document.getElementById("f-obra").value  || document.getElementById("f-obra-libre").value.trim();
-    const getProv  = () => document.getElementById("f-proveedor").value || document.getElementById("f-prov-libre").value.trim();
-    const getQuien = () => document.getElementById("f-quien").value || document.getElementById("f-quien-libre").value.trim();
-
-    const tipo = getTipo(); const obra = getObra();
-    if (!tipo) { alert("Escribe o selecciona el tipo de gasto"); return; }
-    if (!obra) { alert("Escribe o selecciona la obra"); return; }
+    const tipo  = document.getElementById("f-tipo").value  || document.getElementById("f-tipo-libre").value.trim();
+    const obra  = document.getElementById("f-obra").value  || document.getElementById("f-obra-libre").value.trim();
+    const prov  = document.getElementById("f-proveedor").value || document.getElementById("f-prov-libre").value.trim();
+    const quien = document.getElementById("f-quien").value || document.getElementById("f-quien-libre").value.trim();
+    if (!tipo) { alert("Selecciona o escribe el tipo de gasto"); return; }
+    if (!obra) { alert("Selecciona o escribe la obra"); return; }
 
     const record = {
       fecha:       document.getElementById("f-fecha").value,
       tipo, obra,
-      estado:      document.getElementById("f-estado").value.trim(),
-      proveedor:   getProv(),
-      quien:       getQuien(),
+      estado:      document.getElementById("f-estado").value,
+      proveedor:   prov,
+      quien:       quien,
       clase:       document.getElementById("f-clase").value,
       monto:       parseFloat(document.getElementById("f-monto").value) || 0,
       descripcion: document.getElementById("f-desc").value.trim(),
@@ -656,25 +650,25 @@ function initForm() {
     };
 
     const btn = document.getElementById("submit-btn");
-    btn.disabled = true; btn.textContent = "Guardandoâ¦";
+    btn.disabled = true; btn.textContent = "Guardando...";
     try {
       if (editingKey) {
         await update(ref(db, "gastos/" + editingKey), record);
         editingKey = null;
         document.getElementById("form-title").textContent = "Nuevo registro";
         document.getElementById("cancel-btn").style.display = "none";
-        btn.textContent = "â Actualizado";
+        btn.textContent = "Actualizado";
       } else {
         await push(dbRef, record);
-        btn.textContent = "â Guardado";
+        btn.textContent = "Guardado";
       }
       resetForm();
     } catch (err) {
       alert("Error al guardar: " + err.message);
-      btn.textContent = "ð¾ Guardar registro";
+      btn.textContent = "Guardar registro";
     }
     btn.disabled = false;
-    setTimeout(() => btn.textContent = "ð¾ Guardar registro", 2200);
+    setTimeout(() => btn.textContent = "Guardar registro", 2000);
   });
 
   document.getElementById("cancel-btn").addEventListener("click", () => {
@@ -686,17 +680,17 @@ function initForm() {
 
 function resetForm() {
   document.getElementById("expense-form").reset();
-  setToday();
+  document.getElementById("f-fecha").value  = todayStr();
   document.getElementById("f-clase").value  = "Empresa";
   document.getElementById("c-emp").checked  = true;
   document.getElementById("f-estado").value = "";
-  document.getElementById("estado-auto").style.display = "none";
+  document.getElementById("estado-hint").style.display = "none";
   ["f-tipo","f-obra","f-proveedor","f-quien"].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = "";
   });
 }
 
-// ââ EDITAR / BORRAR ââââââââââââââââââââââââââââ
+// ── EDITAR / BORRAR ──────────────────────────────
 window.editRec = key => {
   const r = allRecords.find(x => x.key === key); if (!r) return;
   editingKey = key; setTab("captura");
@@ -710,189 +704,189 @@ window.editRec = key => {
     document.getElementById("f-estado").value  = r.estado || "";
     if (r.clase === "Personal") document.getElementById("c-per").checked = true;
     else document.getElementById("c-emp").checked = true;
-    // Setea cada combo
     setCombo("f-tipo-sel",  "f-tipo-libre",  "f-tipo",       r.tipo || "");
     setCombo("f-obra-sel",  "f-obra-libre",  "f-obra",       r.obra || "");
     setCombo("f-prov-sel",  "f-prov-libre",  "f-proveedor",  r.proveedor || "");
     setCombo("f-quien-sel", "f-quien-libre", "f-quien",      r.quien || "");
     if (r.estado) {
-      document.getElementById("estado-auto-val").textContent = r.estado;
-      document.getElementById("estado-auto").style.display = "block";
+      document.getElementById("estado-hint-val").textContent = r.estado;
+      document.getElementById("estado-hint").style.display = "block";
     }
     document.getElementById("form-title").textContent = "Editar registro";
     document.getElementById("cancel-btn").style.display = "flex";
   }, 80);
 };
 
-function setCombo(selId, libreId, hidId, val) {
+function setCombo(selId, libId, hidId, val) {
   const sel = document.getElementById(selId);
-  const lib = document.getElementById(libreId);
+  const lib = document.getElementById(libId);
   const hid = document.getElementById(hidId);
   if (!sel || !lib || !hid) return;
-  const opt = [...sel.options].find(o => o.value === val);
-  if (opt) { sel.value = val; lib.value = ""; }
-  else      { sel.value = ""; lib.value = val; }
+  const found = [...sel.options].find(o => o.value === val);
+  if (found) { sel.value = val; lib.value = ""; }
+  else        { sel.value = ""; lib.value = val; }
   hid.value = val;
 }
 
 window.delRec = async key => {
-  if (!confirm("Â¿Eliminar este registro?")) return;
+  if (!confirm("Eliminar este registro?")) return;
   await remove(ref(db, "gastos/" + key));
 };
 
 window.applyFilters = () => renderMovimientos();
 
-// ââ TABLA MOVIMIENTOS ââââââââââââââââââââââââââ
+// ── TABLA MOVIMIENTOS ────────────────────────────
 function renderMovimientos() {
   const fc = document.getElementById("fil-clase")?.value || "";
   const fo = document.getElementById("fil-obra")?.value  || "";
   const fm = document.getElementById("fil-mes")?.value   || "";
   let data = [...allRecords];
-  if (fc) data = data.filter(r => r.clase  === fc);
-  if (fo) data = data.filter(r => r.obra   === fo);
+  if (fc) data = data.filter(r => r.clase === fc);
+  if (fo) data = data.filter(r => r.obra  === fo);
   if (fm) data = data.filter(r => (r.fecha||"").startsWith(fm));
   const tbody = document.getElementById("tabla-body");
   if (!tbody) return;
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:#888">Sin registros con estos filtros</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#888">Sin registros</td></tr>';
     return;
   }
-  tbody.innerHTML = data.map(r => `
-    <tr class="row-${r.clase==="Empresa"?"emp":"per"}">
-      <td class="fecha-cell">${r.fecha||""}</td>
-      <td><span class="tag ${tipoClass(r.tipo)}">${r.tipo||""}</span></td>
-      <td class="hide-xs" style="font-size:12px">${r.obra||""}</td>
-      <td class="hide-sm" style="font-size:12px">${r.proveedor||""}</td>
-      <td><span class="badge-clase ${r.clase==="Empresa"?"b-emp":"b-per"}">${r.clase||""}</span></td>
-      <td class="monto-cell ${r.tipo==="Ingreso de Obra"?"pos":""}">${r.tipo==="Ingreso de Obra"?"+":""}${fmt(r.monto)}</td>
-      <td><button class="act-btn" onclick="editRec('${r.key}')">âï¸</button><button class="act-btn" onclick="delRec('${r.key}')">ð</button></td>
-    </tr>`).join("");
+  tbody.innerHTML = data.map(r => {
+    const isIng = r.tipo === "Ingreso de Obra";
+    return '<tr class="row-' + (r.clase==="Empresa"?"emp":"per") + '">' +
+      '<td class="fecha-cell">' + (r.fecha||"") + '</td>' +
+      '<td><span class="tag ' + tipoClass(r.tipo) + '">' + (r.tipo||"") + '</span></td>' +
+      '<td class="hide-xs" style="font-size:12px">' + (r.obra||"") + '</td>' +
+      '<td class="hide-sm" style="font-size:12px">' + (r.proveedor||"") + '</td>' +
+      '<td><span class="badge-clase ' + (r.clase==="Empresa"?"b-emp":"b-per") + '">' + (r.clase||"") + '</span></td>' +
+      '<td class="monto-cell' + (isIng?" pos":"") + '">' + (isIng?"+":"") + fmt(r.monto) + '</td>' +
+      '<td><button class="act-btn" onclick="editRec(\'' + r.key + '\')">edit</button>' +
+      '<button class="act-btn" onclick="delRec(\'' + r.key + '\')">del</button></td>' +
+      '</tr>';
+  }).join("");
 }
 
-// ââ KPIs âââââââââââââââââââââââââââââââââââââââ
+// ── KPIs ─────────────────────────────────────────
 function updateKPIs() {
   const mes = new Date().toISOString().slice(0,7);
   const m   = allRecords.filter(r => (r.fecha||"").startsWith(mes));
-  const empM = m.filter(r=>r.clase==="Empresa"&&r.tipo!=="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
-  const perM = m.filter(r=>r.clase==="Personal").reduce((s,r)=>s+r.monto,0);
-  const dies = m.filter(r=>["Diesel / Combustible","Aerogas"].includes(r.tipo)).reduce((s,r)=>s+r.monto,0);
-  const ingT = allRecords.filter(r=>r.tipo==="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
-  const gasT = allRecords.filter(r=>r.clase==="Empresa"&&r.tipo!=="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
+  const empM = m.filter(r => r.clase==="Empresa" && r.tipo!=="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
+  const perM = m.filter(r => r.clase==="Personal").reduce((s,r)=>s+r.monto,0);
+  const dies = m.filter(r => r.tipo==="Diesel / Combustible" || r.tipo==="Aerogas").reduce((s,r)=>s+r.monto,0);
+  const ingT = allRecords.filter(r => r.tipo==="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
+  const gasT = allRecords.filter(r => r.clase==="Empresa" && r.tipo!=="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
   setText("kpi-empresa",  fmt(empM));
   setText("kpi-personal", fmt(perM));
   setText("kpi-diesel",   fmt(dies));
   setText("kpi-registros", m.length + " mov.");
   const balEl = document.getElementById("kpi-balance");
-  if (balEl) { balEl.textContent = fmt(ingT - gasT); balEl.style.color = ingT-gasT>=0?"var(--green)":"var(--red)"; }
+  if (balEl) {
+    const bal = ingT - gasT;
+    balEl.textContent = fmt(bal);
+    balEl.style.color = bal >= 0 ? "var(--green)" : "var(--red)";
+  }
 }
 
-// ââ GRÃFICAS âââââââââââââââââââââââââââââââââââ
+// ── GRAFICAS ─────────────────────────────────────
 function renderCharts() {
   updateKPIs();
   const COLS = ["#1A2332","#E8A217","#27AE60","#2980B9","#8E44AD","#C0392B","#16A085","#D35400"];
-  const emp  = allRecords.filter(r=>r.clase==="Empresa"&&r.tipo!=="Ingreso de Obra");
-
+  const emp  = allRecords.filter(r => r.clase==="Empresa" && r.tipo!=="Ingreso de Obra");
   const catMap={};
-  emp.forEach(r=>{ catMap[r.tipo]=(catMap[r.tipo]||0)+r.monto; });
-  const catL=Object.keys(catMap).sort((a,b)=>catMap[b]-catMap[a]).slice(0,8);
-
+  emp.forEach(r => { catMap[r.tipo] = (catMap[r.tipo]||0) + r.monto; });
+  const catL = Object.keys(catMap).sort((a,b) => catMap[b]-catMap[a]).slice(0,8);
   const obraMap={};
-  emp.forEach(r=>{ obraMap[r.obra||"?"]=(obraMap[r.obra||"?"]||0)+r.monto; });
-  const obraL=Object.keys(obraMap).sort((a,b)=>obraMap[b]-obraMap[a]);
-
-  const empT=emp.reduce((s,r)=>s+r.monto,0);
-  const perT=allRecords.filter(r=>r.clase==="Personal").reduce((s,r)=>s+r.monto,0);
-  const ingT=allRecords.filter(r=>r.tipo==="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
-
+  emp.forEach(r => { const o=r.obra||"?"; obraMap[o]=(obraMap[o]||0)+r.monto; });
+  const obraL = Object.keys(obraMap).sort((a,b) => obraMap[b]-obraMap[a]);
+  const empT = emp.reduce((s,r)=>s+r.monto,0);
+  const perT = allRecords.filter(r=>r.clase==="Personal").reduce((s,r)=>s+r.monto,0);
+  const ingT = allRecords.filter(r=>r.tipo==="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
   const mMap={};
-  allRecords.forEach(r=>{
-    if(!r.fecha) return;
-    const m=r.fecha.slice(0,7);
-    if(!mMap[m]) mMap[m]={e:0,p:0,i:0};
-    if(r.tipo==="Ingreso de Obra") mMap[m].i+=r.monto;
-    else if(r.clase==="Empresa")   mMap[m].e+=r.monto;
-    else                           mMap[m].p+=r.monto;
+  allRecords.forEach(r => {
+    if (!r.fecha) return;
+    const m = r.fecha.slice(0,7);
+    if (!mMap[m]) mMap[m]={e:0,p:0,i:0};
+    if (r.tipo==="Ingreso de Obra") mMap[m].i+=r.monto;
+    else if (r.clase==="Empresa")   mMap[m].e+=r.monto;
+    else                            mMap[m].p+=r.monto;
   });
-  const months=Object.keys(mMap).sort();
-  const mL=months.map(m=>{const[y,mo]=m.split("-");return["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][+mo]+" "+y.slice(2);});
+  const months = Object.keys(mMap).sort();
+  const MNAMES = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const mLabels = months.map(m => { const [y,mo]=m.split("-"); return MNAMES[+mo]+" "+y.slice(2); });
 
-  const kill=id=>{if(charts[id]){charts[id].destroy();delete charts[id];}};
+  const kill = id => { if (charts[id]) { charts[id].destroy(); delete charts[id]; } };
   ["chartCat","chartObra","chartClase","chartTrend"].forEach(kill);
+  const barOpts = () => ({
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{ticks:{callback:v=>"$"+fmtK(v)},grid:{color:"#f0f0f0"}},y:{grid:{display:false}}}
+  });
+  const el = id => document.getElementById(id);
 
-  const barO=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>"$"+fmtK(v)},grid:{color:"#f0f0f0"}},y:{grid:{display:false}}}});
-  const el=id=>document.getElementById(id);
-
-  if(el("chartCat")&&catL.length) charts.chartCat=new Chart(el("chartCat"),{type:"bar",data:{labels:catL,datasets:[{data:catL.map(k=>catMap[k]),backgroundColor:COLS,borderRadius:4}]},options:{...barO(),indexAxis:"y"}});
-  if(el("chartObra")&&obraL.length) charts.chartObra=new Chart(el("chartObra"),{type:"doughnut",data:{labels:obraL,datasets:[{data:obraL.map(k=>obraMap[k]),backgroundColor:COLS,borderWidth:2,borderColor:"#fff"}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}}}}});
-  if(el("chartClase")) charts.chartClase=new Chart(el("chartClase"),{type:"bar",data:{labels:["Empresa","Personal","Ingresos"],datasets:[{data:[empT,perT,ingT],backgroundColor:["#1A2332","#C0392B","#27AE60"],borderRadius:6}]},options:barO()});
-  if(el("chartTrend")&&months.length) charts.chartTrend=new Chart(el("chartTrend"),{type:"line",data:{labels:mL,datasets:[{label:"Empresa",data:months.map(m=>mMap[m].e),borderColor:"#1A2332",backgroundColor:"rgba(26,35,50,.1)",fill:true,tension:.4,pointRadius:4},{label:"Personal",data:months.map(m=>mMap[m].p),borderColor:"#C0392B",backgroundColor:"rgba(192,57,43,.07)",fill:true,tension:.4,pointRadius:4},{label:"Ingresos",data:months.map(m=>mMap[m].i),borderColor:"#27AE60",backgroundColor:"rgba(39,174,96,.07)",fill:true,tension:.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}}},scales:{y:{ticks:{callback:v=>"$"+fmtK(v)},grid:{color:"#f0f0f0"}},x:{grid:{display:false}}}}});
+  if (el("chartCat") && catL.length)
+    charts.chartCat = new Chart(el("chartCat"), {type:"bar", data:{labels:catL, datasets:[{data:catL.map(k=>catMap[k]),backgroundColor:COLS,borderRadius:4}]}, options:{...barOpts(),indexAxis:"y"}});
+  if (el("chartObra") && obraL.length)
+    charts.chartObra = new Chart(el("chartObra"), {type:"doughnut", data:{labels:obraL, datasets:[{data:obraL.map(k=>obraMap[k]),backgroundColor:COLS,borderWidth:2,borderColor:"#fff"}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}}}}});
+  if (el("chartClase"))
+    charts.chartClase = new Chart(el("chartClase"), {type:"bar", data:{labels:["Empresa","Personal","Ingresos"], datasets:[{data:[empT,perT,ingT],backgroundColor:["#1A2332","#C0392B","#27AE60"],borderRadius:6}]}, options:barOpts()});
+  if (el("chartTrend") && months.length)
+    charts.chartTrend = new Chart(el("chartTrend"), {type:"line", data:{labels:mLabels, datasets:[
+      {label:"Empresa",data:months.map(m=>mMap[m].e),borderColor:"#1A2332",backgroundColor:"rgba(26,35,50,.1)",fill:true,tension:.4,pointRadius:4},
+      {label:"Personal",data:months.map(m=>mMap[m].p),borderColor:"#C0392B",backgroundColor:"rgba(192,57,43,.07)",fill:true,tension:.4,pointRadius:4},
+      {label:"Ingresos",data:months.map(m=>mMap[m].i),borderColor:"#27AE60",backgroundColor:"rgba(39,174,96,.07)",fill:true,tension:.4,pointRadius:4}
+    ]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}}},scales:{y:{ticks:{callback:v=>"$"+fmtK(v)},grid:{color:"#f0f0f0"}},x:{grid:{display:false}}}}});
 }
 
-// ââ HELPERS ââââââââââââââââââââââââââââââââââââ
-const fmt=n=>"$"+(n||0).toLocaleString("es-MX",{minimumFractionDigits:0});
-const fmtK=n=>n>=1000?Math.round(n/1000)+"k":n;
-const setText=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-function tipoClass(t){
-  const m={"Diesel / Combustible":"t-comb","Aerogas":"t-comb","NÃ³mina / Sueldos":"t-nom","ViÃ¡ticos":"t-viat","Refacciones":"t-ref","Llantas / Mantenimiento":"t-ref","Ingreso de Obra":"t-ing","Colegiatura":"t-per","Restaurante / Comida":"t-per","Vacaciones / Viaje":"t-per"};
-  return m[t]||"t-otro";
+// ── HELPERS ──────────────────────────────────────
+function todayStr() { return new Date().toISOString().split("T")[0]; }
+function fmt(n) { return "$" + (n||0).toLocaleString("es-MX", {minimumFractionDigits:0}); }
+function fmtK(n) { return n >= 1000 ? Math.round(n/1000) + "k" : n; }
+function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+function tipoClass(t) {
+  const m = {
+    "Diesel / Combustible":"t-comb","Aerogas":"t-comb",
+    "Nomina / Sueldos":"t-nom","Viaticos":"t-viat",
+    "Refacciones":"t-ref","Llantas / Mantenimiento":"t-ref",
+    "Ingreso de Obra":"t-ing","Colegiatura":"t-per",
+    "Restaurante / Comida":"t-per","Vacaciones / Viaje":"t-per"
+  };
+  return m[t] || "t-otro";
 }
 
-// Forzar actualizacion (borra cache del SW y recarga)
+// ── FORZAR ACTUALIZACION ─────────────────────────
 window.forceUpdate = async () => {
-  const statusEl = document.getElementById("update-status");
-  if (statusEl) statusEl.textContent = "Limpiando cachÃ©...";
+  const st = document.getElementById("update-status");
+  if (st) st.textContent = "Limpiando cache...";
   try {
-    // Borra todos los caches del Service Worker
     const keys = await caches.keys();
     await Promise.all(keys.map(k => caches.delete(k)));
-    // Manda mensaje al SW para que se actualice
     if (navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage("SKIP_WAITING");
     }
-    if (statusEl) statusEl.textContent = "CachÃ© limpio. Recargando...";
+    if (st) st.textContent = "Cache limpio. Recargando...";
     setTimeout(() => window.location.reload(true), 800);
   } catch(e) {
-    if (statusEl) statusEl.textContent = "Error: " + e.message;
     window.location.reload(true);
   }
 };
 
-// Detecta cuando el SW tiene una version nueva disponible y avisa al usuario
+// Offline
+window.addEventListener("online",  () => { document.getElementById("toast").style.display="none"; });
+window.addEventListener("offline", () => { document.getElementById("toast").style.display="block"; });
+
+// Service Worker
 if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").then(reg => {
     reg.addEventListener("updatefound", () => {
-      const newWorker = reg.installing;
-      newWorker.addEventListener("statechange", () => {
-        if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-          // Hay version nueva disponible
-          const toast = document.getElementById("offline-toast");
-          if (toast) {
-            toast.textContent = "ð Nueva version disponible â ve a Configurar â Actualizar app";
-            toast.style.display = "block";
-            toast.style.background = "var(--green)";
-          }
+      const nw = reg.installing;
+      nw.addEventListener("statechange", () => {
+        if (nw.state === "installed" && navigator.serviceWorker.controller) {
+          const t = document.getElementById("toast");
+          if (t) { t.textContent = "Nueva version disponible — ve a Configurar"; t.style.display="block"; t.style.background="#27AE60"; }
         }
       });
     });
   }).catch(() => {});
 }
-
-
-// Detecta versión nueva del Service Worker
-if('serviceWorker' in navigator) {
-    reg.addEventListener('updatefound', () => {
-      reg.installing.addEventListener('statechange', function() {
-        if(this.state === 'installed' && navigator.serviceWorker.controller) {
-          const t = document.getElementById('offline-toast');
-          if(t){ t.textContent='🔄 Nueva versión disponible — ve a Configurar → Actualizar app'; t.style.display='block'; t.style.background='#27AE60'; }
-        }
-      });
-    });
-  }).catch(()=>{});
-}
-
-// Offline
-window.addEventListener("online",  ()=>{document.getElementById("offline-toast").style.display="none";});
-window.addEventListener("offline", ()=>{document.getElementById("offline-toast").style.display="block";});
 </script>
 </body>
 </html>
