@@ -12,7 +12,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--dark:#1A2332;--mid:#2C3E50;--accent:#E8A217;--green:#27AE60;--red:#C0392B;--blue:#2980B9;--bg:#F5F6FA;--white:#FFFFFF;--border:#E2E5EC;--muted:#7F8C9B;--emp:#EAF7EF;--per:#FDEDEC;--nav-h:60px;--r:10px;--shadow:0 2px 12px rgba(26,35,50,.08)}
+:root {
+  --dark:#1A2332; --mid:#2C3E50; --accent:#E8A217;
+  --green:#27AE60; --red:#C0392B; --blue:#2980B9;
+  --bg:#F5F6FA; --white:#FFFFFF; --border:#E2E5EC;
+  --muted:#7F8C9B; --emp:#EAF7EF; --per:#FDEDEC;
+  --nav-h:60px; --r:10px; --shadow:0 2px 12px rgba(26,35,50,.08);
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--dark);font-size:14px}
 .app-header{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--dark);color:#fff;height:56px;display:flex;align-items:center;padding:0 1rem;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
@@ -20,12 +26,13 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sa
 .header-sub{font-size:11px;color:#8FA4B8;margin-top:1px}
 .header-logo{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--dark);flex-shrink:0}
 .sync-dot{width:8px;height:8px;border-radius:50%;background:#555;margin-left:auto;flex-shrink:0;transition:background .3s}
-.sync-dot.ok{background:var(--green)}.sync-dot.err{background:var(--red)}
+.sync-dot.ok{background:var(--green)}
+.sync-dot.err{background:var(--red)}
 .main{margin-top:56px;margin-bottom:var(--nav-h);padding:1rem;max-width:900px;margin-left:auto;margin-right:auto}
 @media(min-width:900px){.main{padding:1.5rem 2rem}}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;height:var(--nav-h);background:var(--white);border-top:1px solid var(--border);display:flex;align-items:stretch;box-shadow:0 -2px 12px rgba(0,0,0,.06)}
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:transparent;cursor:pointer;font-size:10px;color:var(--muted);font-weight:500;padding:0;-webkit-appearance:none;transition:color .15s}
-.nav-btn .ic{font-size:22px;line-height:1}
+.nav-btn .ic{font-size:20px;line-height:1}
 .nav-btn.active{color:var(--dark)}
 .screen{display:none}.screen.active{display:block}
 .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
@@ -41,14 +48,20 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sa
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:400px){.form-row{grid-template-columns:1fr}}
 label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:4px}
+.field-wrap{position:relative}
 input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;color:var(--dark);background:var(--white);transition:border-color .15s;-webkit-appearance:none;appearance:none;font-family:inherit}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--dark)}
 textarea{resize:vertical;min-height:72px}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237F8C9B' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
 .req{color:var(--accent)}
-.libre-input{margin-top:6px;font-size:13px;color:var(--muted)}
+/* Combo: select + free text */
+.combo-wrap{display:flex;flex-direction:column;gap:6px}
+.combo-wrap select{border-radius:8px 8px 0 0;border-bottom:1px solid var(--border)}
+.combo-wrap input{border-radius:0 0 8px 8px;border-top:none;font-size:13px;color:var(--muted)}
+.combo-wrap input::placeholder{font-style:italic}
 .btn-primary{width:100%;padding:13px;border:none;border-radius:var(--r);background:var(--dark);color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;font-family:inherit}
-.btn-primary:active{background:#0F1620}.btn-primary:disabled{opacity:.6;cursor:default}
+.btn-primary:active{background:#0F1620}
+.btn-primary:disabled{opacity:.6;cursor:default}
 .btn-sec{width:100%;padding:11px;border:1.5px solid var(--border);border-radius:var(--r);background:transparent;color:var(--dark);font-size:14px;font-weight:500;cursor:pointer;margin-top:8px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:inherit}
 .clase-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .clase-opt{display:none}
@@ -78,18 +91,19 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
 .b-emp{background:#D5F5E3;color:#1A5C34}.b-per{background:#FDEDEC;color:#922B21}
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem}
 .filters select{width:auto;flex:1;min-width:120px;padding:8px 32px 8px 10px;font-size:13px}
-.alert-box{background:#FEF9E7;border-left:3px solid var(--accent);border-radius:0 var(--r) var(--r) 0;padding:10px 14px;font-size:13px;color:#7D6000;margin-bottom:1rem}
-.success-box{background:#E9F7EF;border-left:3px solid var(--green);border-radius:0 var(--r) var(--r) 0;padding:10px 14px;font-size:13px;color:#1A5C34;margin-bottom:1rem}
-.estado-hint{font-size:11px;color:var(--green);margin-top:4px;display:none}
+.alert{background:#FEF9E7;border-left:3px solid var(--accent);border-radius:0 var(--r) var(--r) 0;padding:10px 14px;font-size:13px;color:#7D6000;margin-bottom:1rem}
+.success{background:#E9F7EF;border-left:3px solid var(--green);border-radius:0 var(--r) var(--r) 0;padding:10px 14px;font-size:13px;color:#1A5C34;margin-bottom:1rem}
 @media(max-width:500px){.hide-xs{display:none}}
 @media(max-width:640px){.hide-sm{display:none}}
-#toast{display:none;position:fixed;bottom:calc(var(--nav-h)+12px);left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.2);white-space:nowrap}
-.cat-status{font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:.5rem;min-height:16px}
+#offline-toast{display:none;position:fixed;bottom:calc(var(--nav-h)+12px);left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 16px;border-radius:999px;font-size:13px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid #ccc;border-top-color:var(--dark);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.catalog-status{font-size:11px;color:var(--muted);margin-top:4px;min-height:16px}
 </style>
 </head>
 <body>
 
-<div id="toast">Sin conexion</div>
+<div id="offline-toast">⚠️ Sin conexión</div>
 
 <header class="app-header">
   <div class="header-logo">SC</div>
@@ -97,17 +111,17 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
     <h1>Sinaloa Construcciones</h1>
     <div class="header-sub">Control de gastos de obra</div>
   </div>
-  <div class="sync-dot" id="sync-dot" title="Firebase"></div>
+  <div class="sync-dot" id="sync-dot" title="Estado de conexión"></div>
 </header>
 
 <main class="main">
 
-  <!-- CAPTURA -->
+  <!-- ── CAPTURA ── -->
   <div class="screen active" id="screen-captura">
-    <p id="form-title" style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:2px">Nuevo registro</p>
-    <div class="cat-status" id="cat-status">Cargando catalogos...</div>
+    <p id="form-title" style="font-size:14px;font-weight:700;color:var(--dark);margin-bottom:.75rem;">Nuevo registro</p>
+    <div class="catalog-status" id="catalog-status">⏳ Cargando catálogos…</div>
 
-    <div class="card">
+    <div class="card" style="margin-top:.5rem">
       <form id="expense-form" autocomplete="off">
 
         <div class="form-row">
@@ -123,31 +137,50 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
 
         <div class="form-group">
           <label>Tipo de gasto <span class="req">*</span></label>
-          <select id="f-tipo-sel"><option value="">-- Seleccionar tipo --</option></select>
-          <input type="text" id="f-tipo-libre" class="libre-input" placeholder="O escribe aqui si no esta en la lista..."/>
+          <div class="combo-wrap">
+            <select id="f-tipo-sel">
+              <option value="">— Seleccionar de la lista —</option>
+            </select>
+            <input type="text" id="f-tipo-txt" placeholder="O escribe libremente aquí si no está en la lista…"/>
+          </div>
           <input type="hidden" id="f-tipo"/>
         </div>
 
         <div class="form-group">
           <label>Obra / Proyecto <span class="req">*</span></label>
-          <select id="f-obra-sel"><option value="">-- Seleccionar obra --</option></select>
-          <input type="text" id="f-obra-libre" class="libre-input" placeholder="O escribe el nombre de la obra..."/>
+          <div class="combo-wrap">
+            <select id="f-obra-sel">
+              <option value="">— Seleccionar de la lista —</option>
+            </select>
+            <input type="text" id="f-obra-txt" placeholder="O escribe el nombre de la obra aquí…"/>
+          </div>
           <input type="hidden" id="f-obra"/>
-          <input type="hidden" id="f-estado"/>
-          <div class="estado-hint" id="estado-hint">Estado: <strong id="estado-hint-val"></strong></div>
+        </div>
+
+        <div class="form-group">
+          <label>Estado</label>
+          <input type="text" id="f-estado" placeholder="Se llena automático al elegir obra, o escribe el estado…" style="color:var(--muted);font-size:13px;"/>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Proveedor / Credito</label>
-            <select id="f-prov-sel"><option value="">-- Seleccionar --</option></select>
-            <input type="text" id="f-prov-libre" class="libre-input" placeholder="O escribe aqui..."/>
+            <label>Proveedor / Crédito</label>
+            <div class="combo-wrap">
+              <select id="f-prov-sel">
+                <option value="">— Seleccionar —</option>
+              </select>
+              <input type="text" id="f-prov-txt" placeholder="O escribe aquí…"/>
+            </div>
             <input type="hidden" id="f-proveedor"/>
           </div>
           <div class="form-group">
-            <label>Quien realizo el gasto</label>
-            <select id="f-quien-sel"><option value="">-- Seleccionar --</option></select>
-            <input type="text" id="f-quien-libre" class="libre-input" placeholder="O escribe el nombre..."/>
+            <label>Quién realizó el gasto</label>
+            <div class="combo-wrap">
+              <select id="f-quien-sel">
+                <option value="">— Seleccionar —</option>
+              </select>
+              <input type="text" id="f-quien-txt" placeholder="O escribe el nombre…"/>
+            </div>
             <input type="hidden" id="f-quien"/>
           </div>
         </div>
@@ -157,19 +190,19 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
           <div class="clase-toggle">
             <div>
               <input class="clase-opt" type="radio" name="clase" id="c-emp" value="Empresa" checked/>
-              <label class="clase-lbl" for="c-emp">Empresa</label>
+              <label class="clase-lbl" for="c-emp">🏗 Empresa</label>
             </div>
             <div>
               <input class="clase-opt" type="radio" name="clase" id="c-per" value="Personal"/>
-              <label class="clase-lbl" for="c-per">Personal</label>
+              <label class="clase-lbl" for="c-per">👤 Personal</label>
             </div>
           </div>
           <input type="hidden" id="f-clase" value="Empresa"/>
         </div>
 
         <div class="form-group">
-          <label>Descripcion / Concepto</label>
-          <input type="text" id="f-desc" placeholder="Ej: Carga diesel camion 089 — 400 litros"/>
+          <label>Descripción / Concepto</label>
+          <input type="text" id="f-desc" placeholder="Ej: Carga diesel camión 089 — 400 litros"/>
         </div>
 
         <div class="form-row">
@@ -179,38 +212,38 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
           </div>
           <div class="form-group">
             <label>Notas</label>
-            <input type="text" id="f-notas" placeholder="Observaciones..."/>
+            <input type="text" id="f-notas" placeholder="Observaciones…"/>
           </div>
         </div>
 
-        <button type="submit" class="btn-primary" id="submit-btn">Guardar registro</button>
-        <button type="button" class="btn-sec" id="cancel-btn" style="display:none">Cancelar edicion</button>
+        <button type="submit" class="btn-primary" id="submit-btn">💾 Guardar registro</button>
+        <button type="button" class="btn-sec" id="cancel-btn" style="display:none">✕ Cancelar edición</button>
       </form>
     </div>
 
-    <div class="alert-box">
-      Tip: Si el concepto, obra o proveedor no aparece en la lista, escribelo directamente en el campo de texto debajo del desplegable.
+    <div class="alert">
+      💡 <strong>Tip:</strong> Si el concepto, obra o proveedor no está en la lista, escríbelo directamente en el campo de texto libre debajo del desplegable.
     </div>
   </div>
 
-  <!-- RESUMEN -->
+  <!-- ── RESUMEN ── -->
   <div class="screen" id="screen-resumen">
     <div class="kpi-grid">
-      <div class="kpi ac"><div class="kpi-label">Gastos empresa (mes)</div><div class="kpi-value" id="kpi-empresa">$0</div><div class="kpi-sub">Empresa este mes</div></div>
-      <div class="kpi re"><div class="kpi-label">Gastos personales (mes)</div><div class="kpi-value" id="kpi-personal">$0</div><div class="kpi-sub">Personal este mes</div></div>
+      <div class="kpi ac"><div class="kpi-label">Gastos empresa (mes)</div><div class="kpi-value" id="kpi-empresa">$0</div><div class="kpi-sub">Clasificados empresa</div></div>
+      <div class="kpi re"><div class="kpi-label">Gastos personales (mes)</div><div class="kpi-value" id="kpi-personal">$0</div><div class="kpi-sub">Clasificados personal</div></div>
       <div class="kpi"><div class="kpi-label">Diesel + Combustible</div><div class="kpi-value" id="kpi-diesel">$0</div><div class="kpi-sub">Mes actual</div></div>
-      <div class="kpi gr"><div class="kpi-label">Balance total</div><div class="kpi-value" id="kpi-balance">$0</div><div class="kpi-sub">Ingresos menos gastos</div></div>
+      <div class="kpi gr"><div class="kpi-label">Balance total</div><div class="kpi-value" id="kpi-balance">$0</div><div class="kpi-sub">Ingresos − Gastos</div></div>
       <div class="kpi bl"><div class="kpi-label">Movimientos</div><div class="kpi-value" id="kpi-registros">0</div><div class="kpi-sub">Este mes</div></div>
     </div>
     <div class="charts-2col">
-      <div class="card"><div class="card-title">Por categoria</div><div class="chart-wrap"><canvas id="chartCat"></canvas></div></div>
+      <div class="card"><div class="card-title">Por categoría</div><div class="chart-wrap"><canvas id="chartCat"></canvas></div></div>
       <div class="card"><div class="card-title">Por obra</div><div class="chart-wrap"><canvas id="chartObra"></canvas></div></div>
     </div>
     <div class="card"><div class="card-title">Empresa vs Personal vs Ingresos</div><div class="chart-wrap"><canvas id="chartClase"></canvas></div></div>
     <div class="card"><div class="card-title">Tendencia mensual</div><div class="chart-wrap-tall"><canvas id="chartTrend"></canvas></div></div>
   </div>
 
-  <!-- MOVIMIENTOS -->
+  <!-- ── MOVIMIENTOS ── -->
   <div class="screen" id="screen-movimientos">
     <div class="filters">
       <select id="fil-clase" onchange="applyFilters()">
@@ -227,10 +260,6 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
         <option value="2025-07">Jul 2025</option><option value="2025-08">Ago 2025</option>
         <option value="2025-09">Sep 2025</option><option value="2025-10">Oct 2025</option>
         <option value="2025-11">Nov 2025</option><option value="2025-12">Dic 2025</option>
-        <option value="2026-01">Ene 2026</option><option value="2026-02">Feb 2026</option>
-        <option value="2026-03">Mar 2026</option><option value="2026-04">Abr 2026</option>
-        <option value="2026-05">May 2026</option><option value="2026-06">Jun 2026</option>
-        <option value="2026-07">Jul 2026</option><option value="2026-08">Ago 2026</option>
       </select>
     </div>
     <div class="card" style="padding:0">
@@ -242,50 +271,45 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
             <th class="hide-sm">Proveedor</th>
             <th>Clase</th><th>Monto</th><th></th>
           </tr></thead>
-          <tbody id="tabla-body">
-            <tr><td colspan="7" style="text-align:center;padding:2rem;color:#888">Cargando...</td></tr>
-          </tbody>
+          <tbody id="tabla-body"><tr><td colspan="7" style="text-align:center;padding:2rem;color:#888">Cargando…</td></tr></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- CONFIGURAR -->
+  <!-- ── CONFIG ── -->
   <div class="screen" id="screen-config">
     <div class="card">
-      <div class="card-title">Estado del catalogo</div>
-      <div id="cat-info" class="alert-box">Verificando conexion con GitHub...</div>
-      <p style="font-size:13px;color:var(--muted);line-height:1.6;margin:1rem 0">
-        La app lee <strong>catalogo.xlsx</strong> de tu repositorio GitHub y llena los desplegables automaticamente.
+      <div class="card-title">Estado del catálogo</div>
+      <div id="cat-info" class="alert">Verificando conexión con GitHub…</div>
+
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.6">
+        La app lee el archivo <strong>catalogo.xlsx</strong> de tu repositorio de GitHub para llenar los desplegables de obras, personas, tipos de gasto y proveedores. Cada vez que subas una versión nueva del Excel, la app se actualiza automáticamente.
       </p>
-      <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;font-family:monospace;line-height:1.9;word-break:break-all">
-        Repositorio: https://github.com/amayranidelossantos833-sys/sinaloa-obras<br/>
-        Catalogo: https://raw.githubusercontent.com/amayranidelossantos833-sys/sinaloa-obras/main/catalogo.xlsx
+
+      <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;font-family:monospace;margin-bottom:1rem;line-height:1.8">
+        📁 Tu repositorio:<br/>
+        <strong id="repo-url" style="color:var(--blue)">—</strong><br/><br/>
+        📄 Archivo catálogo:<br/>
+        <strong id="cat-url" style="color:var(--blue)">—</strong>
+      </div>
+
+      <div class="card-title" style="margin-top:1rem">Cómo actualizar los catálogos</div>
+      <div style="font-size:13px;line-height:2;color:var(--dark)">
+        <div>1️⃣ Descarga el <strong>Catalogo_SinaloaObras.xlsx</strong> que te entregué</div>
+        <div>2️⃣ Edítalo: agrega obras, personas, tipos de gasto o proveedores</div>
+        <div>3️⃣ Guárdalo con el nombre exacto: <code style="background:var(--bg);padding:1px 5px;border-radius:4px">catalogo.xlsx</code></div>
+        <div>4️⃣ Ve a tu repositorio en GitHub → <strong>Add file → Upload files</strong></div>
+        <div>5️⃣ Sube el archivo → <strong>Commit changes</strong></div>
+        <div>6️⃣ Recarga la app — los desplegables se actualizan solos ✅</div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-title">Actualizar catalogos</div>
-      <div style="font-size:13px;line-height:2.2;color:var(--dark)">
-        1. Abre <strong>Catalogo_SinaloaObras.xlsx</strong> y edita lo que necesites<br/>
-        2. Guardalo con el nombre exacto: <code style="background:var(--bg);padding:1px 6px;border-radius:4px">catalogo.xlsx</code><br/>
-        3. Ve a GitHub — tu repositorio — Add file — Upload files<br/>
-        4. Sube el archivo — Commit changes<br/>
-        5. Recarga la app y los desplegables se actualizan
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Forzar actualizacion</div>
-      <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:1rem">
-        Si subiste cambios a GitHub pero la app sigue mostrando la version anterior, usa este boton para limpiar el cache.
-      </p>
-      <button onclick="forceUpdate()" class="btn-primary">Actualizar app ahora</button>
-      <div id="update-status" style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px"></div>
-      <p style="font-size:11px;color:var(--muted);margin-top:.75rem;line-height:1.7">
-        PC: Ctrl+Shift+R (Windows) / Cmd+Shift+R (Mac)<br/>
-        iPhone: Safari — manten presionado el boton recargar<br/>
-        Android: Chrome — menu — Recargar
+      <div class="card-title">Configuración Firebase</div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6">
+        Tu base de datos: <strong style="color:var(--dark)">obras-91cb4</strong><br/>
+        Todos los registros se guardan en Firebase y son visibles en tiempo real para todos los usuarios.
       </p>
     </div>
   </div>
@@ -293,10 +317,10 @@ tr.row-emp{background:var(--emp)}tr.row-per{background:var(--per)}
 </main>
 
 <nav class="bottom-nav">
-  <button class="nav-btn active" data-tab="captura"><span class="ic">+</span><span>Captura</span></button>
-  <button class="nav-btn" data-tab="resumen"><span class="ic">≡</span><span>Resumen</span></button>
-  <button class="nav-btn" data-tab="movimientos"><span class="ic">☰</span><span>Movimientos</span></button>
-  <button class="nav-btn" data-tab="config"><span class="ic">⚙</span><span>Configurar</span></button>
+  <button class="nav-btn active" data-tab="captura"><span class="ic">➕</span><span>Captura</span></button>
+  <button class="nav-btn" data-tab="resumen"><span class="ic">📊</span><span>Resumen</span></button>
+  <button class="nav-btn" data-tab="movimientos"><span class="ic">📋</span><span>Movimientos</span></button>
+  <button class="nav-btn" data-tab="config"><span class="ic">⚙️</span><span>Configurar</span></button>
 </nav>
 
 <script type="module">
@@ -314,335 +338,311 @@ const firebaseConfig = {
   appId: "1:726672201640:web:4cdf4b523f6f9346bbaf9d"
 };
 
-const fbApp = initializeApp(firebaseConfig);
-const db    = getDatabase(fbApp);
+const app   = initializeApp(firebaseConfig);
+const db    = getDatabase(app);
 const dbRef = ref(db, "gastos");
 
+// ── STATE ──────────────────────────────────────
 let allRecords = [];
 let charts     = {};
 let editingKey = null;
-let cat = { obras:[], personas:[], tipos:[], proveedores:[] };
+let catalog    = { obras:[], personas:[], tipos:[], proveedores:[] };
 
-const GITHUB_RAW = "https://raw.githubusercontent.com/amayranidelossantos833-sys/sinaloa-obras/main/catalogo.xlsx";
+// ── GITHUB CONFIG — actualiza con tu usuario y repo ──
+const GITHUB_USER = "amayranidelossantos833-sys";       // ← cambia esto
+const GITHUB_REPO = "sinaloa-obras";           // ← cambia si usaste otro nombre
+const CAT_FILE    = "catalogo.xlsx";
+const CAT_URL     = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${CAT_FILE}`;
 
-// ── ARRANQUE ────────────────────────────────────
+// ── INIT ───────────────────────────────────────
 window.addEventListener("DOMContentLoaded", async () => {
-  document.getElementById("f-fecha").value = todayStr();
-  initClaseToggle();
-  initCombos();
+  document.getElementById("f-fecha").value = today();
+  document.querySelectorAll(".clase-opt").forEach(r =>
+    r.addEventListener("change", () => { document.getElementById("f-clase").value = r.value; })
+  );
+
+  // Combos: si seleccionas del desplegable limpia el texto libre y viceversa
+  setupCombo("f-tipo-sel",  "f-tipo-txt",  "f-tipo");
+  setupCombo("f-obra-sel",  "f-obra-txt",  "f-obra");
+  setupCombo("f-prov-sel",  "f-prov-txt",  "f-proveedor");
+  setupCombo("f-quien-sel", "f-quien-txt", "f-quien");
+
   initNav();
-  initForm();
+  initForm(db, ref, push, remove, update);
   listenFirebase();
   await loadCatalog();
+
+  // Config screen info
+  const base = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}`;
+  const el = document.getElementById("repo-url");
+  const el2 = document.getElementById("cat-url");
+  if(el)  el.textContent  = `https://github.com/${GITHUB_USER}/${GITHUB_REPO}`;
+  if(el2) el2.textContent = CAT_URL;
 });
 
-// ── COMBOS ──────────────────────────────────────
-// Cada campo tiene: <select> + <input texto libre> + <input hidden>
-// Si seleccionas el select => limpia texto libre, hidden = valor select
-// Si escribes en texto libre => limpia select, hidden = texto libre
-function initCombos() {
-  [
-    ["f-tipo-sel", "f-tipo-libre", "f-tipo", null],
-    ["f-obra-sel", "f-obra-libre", "f-obra", onObraChange],
-    ["f-prov-sel", "f-prov-libre", "f-proveedor", null],
-    ["f-quien-sel","f-quien-libre","f-quien", null],
-  ].forEach(([selId, libId, hidId, onChange]) => {
-    const sel = document.getElementById(selId);
-    const lib = document.getElementById(libId);
-    const hid = document.getElementById(hidId);
-    if (!sel || !lib || !hid) return;
-
-    sel.addEventListener("change", () => {
-      if (sel.value) {
-        lib.value = "";
-        hid.value = sel.value;
-      } else {
-        hid.value = lib.value.trim();
-      }
-      if (onChange) onChange(sel.value);
-    });
-
-    lib.addEventListener("input", () => {
-      const v = lib.value.trim();
-      if (v) {
-        sel.value = "";
-        hid.value = v;
-      } else {
-        hid.value = sel.value;
-      }
-      if (onChange) onChange("");
-    });
+// ── COMBO FIELD ────────────────────────────────
+function setupCombo(selId, txtId, hiddenId) {
+  const sel = document.getElementById(selId);
+  const txt = document.getElementById(txtId);
+  const hid = document.getElementById(hiddenId);
+  if(!sel||!txt||!hid) return;
+  sel.addEventListener("change", () => {
+    if (sel.value) { txt.value = ""; hid.value = sel.value; }
+    else           { hid.value = txt.value; }
+  });
+  txt.addEventListener("input", () => {
+    if (txt.value.trim()) { sel.value = ""; hid.value = txt.value.trim(); }
+    else                  { hid.value = sel.value; }
   });
 }
 
-function onObraChange(obraNombre) {
-  const obj   = cat.obras.find(o => o.nombre === obraNombre);
-  const hid   = document.getElementById("f-estado");
-  const hint  = document.getElementById("estado-hint");
-  const hval  = document.getElementById("estado-hint-val");
-  if (obj && obj.estado) {
-    hid.value = obj.estado;
-    hval.textContent = obj.estado;
-    hint.style.display = "block";
-  } else {
-    hid.value = "";
-    hint.style.display = "none";
-  }
-}
-
-// ── CATALOGO GITHUB ─────────────────────────────
+// ── LOAD CATALOG FROM GITHUB ───────────────────
 async function loadCatalog() {
-  const statusEl = document.getElementById("cat-status");
-  const infoEl   = document.getElementById("cat-info");
+  const statusEl = document.getElementById("catalog-status");
+  const catInfo  = document.getElementById("cat-info");
+
+  if (GITHUB_USER === "TU_USUARIO_GITHUB") {
+    if(statusEl) statusEl.textContent = "⚠️ Configura tu usuario de GitHub en la app (ver sección Configurar)";
+    if(catInfo)  catInfo.textContent  = "⚠️ Falta configurar el usuario de GitHub. Edita el index.html y cambia TU_USUARIO_GITHUB por tu nombre de usuario real.";
+    loadFallbackCatalog();
+    return;
+  }
 
   try {
-    statusEl.textContent = "Cargando catalogos desde GitHub...";
-    const res = await fetch(GITHUB_RAW + "?t=" + Date.now());
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const buf = await res.arrayBuffer();
-    const wb  = XLSX.read(buf, { type: "array" });
+    if(statusEl) statusEl.innerHTML = '<span class="spinner"></span> Cargando catálogos desde GitHub…';
+    const res = await fetch(CAT_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error("No encontrado");
+    const buf  = await res.arrayBuffer();
+    const wb   = XLSX.read(buf, { type:"array" });
 
-    // Estructura del Excel (verificada):
-    // Fila 1 = titulo, Fila 2 = nota, Fila 3 = encabezados, Fila 4+ = datos
-    // Columna A(idx 0) = vacia, Columna B(idx 1) = dato principal
+    // ── helper: lee una hoja y devuelve filas de datos (salta título+nota+encabezado)
+    const readSheet = (ws) => {
+      const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:"" });
+      // Busca la fila de encabezado buscando la que tenga contenido real en col B (índice 1)
+      // Las primeras filas son: 0=título, 1=nota, 2=encabezados, 3+=datos
+      return rows.slice(3).filter(r => String(r[1]||"").trim() !== "");
+    };
 
-    // OBRAS: B=nombre, C=estado, D=cliente, E=estatus
-    const rowsObras = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:""});
-    cat.obras = rowsObras.slice(3)
-      .filter(r => String(r[1]||"").trim() !== "")
+    // Obras — columnas: A(0 vacía) | B(1 nombre) | C(2 estado) | D(3 cliente) | E(4 estatus) | F(5 notas)
+    const wsObras = wb.Sheets["🏗 Obras"] || wb.Sheets[wb.SheetNames[0]];
+    catalog.obras = readSheet(wsObras)
       .filter(r => String(r[4]||"").trim() !== "Terminada")
-      .map(r => ({ nombre: String(r[1]).trim(), estado: String(r[2]||"").trim() }));
+      .map(r => ({
+        nombre: String(r[1]).trim(),
+        estado: String(r[2]||"").trim()
+      }));
 
-    // PERSONAS: B=nombre, C=rol, D=tarjeta
-    const rowsPer = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[1]], {header:1, defval:""});
-    cat.personas = rowsPer.slice(3)
-      .filter(r => String(r[1]||"").trim() !== "")
-      .map(r => ({ nombre: String(r[1]).trim(), rol: String(r[2]||"").trim() }));
+    // Personas — columnas: A(0) | B(1 nombre) | C(2 rol) | D(3 tarjeta) | E(4 teléfono) | F(5 notas)
+    const wsPer = wb.Sheets["👤 Personas"] || wb.Sheets[wb.SheetNames[1]];
+    catalog.personas = readSheet(wsPer)
+      .map(r => ({
+        nombre:  String(r[1]).trim(),
+        rol:     String(r[2]||"").trim(),
+        tarjeta: String(r[3]||"").trim() === "Sí"
+      }));
 
-    // TIPOS: B=concepto, C=categoria, D=activo
-    const rowsTipos = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[2]], {header:1, defval:""});
-    cat.tipos = rowsTipos.slice(3)
-      .filter(r => String(r[1]||"").trim() !== "")
+    // Tipos — columnas: A(0) | B(1 concepto) | C(2 categoría) | D(3 activo) | E(4 descripción)
+    const wsTipos = wb.Sheets["📂 Tipos de Gasto"] || wb.Sheets[wb.SheetNames[2]];
+    catalog.tipos = readSheet(wsTipos)
       .filter(r => String(r[3]||"").trim() !== "No")
-      .map(r => ({ nombre: String(r[1]).trim(), categoria: String(r[2]||"").trim() }));
+      .map(r => ({
+        nombre:    String(r[1]).trim(),
+        categoria: String(r[2]||"").trim()
+      }));
 
-    // PROVEEDORES: B=nombre, C=tipo, D=limite, E=activo
-    const rowsProv = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[3]], {header:1, defval:""});
-    cat.proveedores = rowsProv.slice(3)
-      .filter(r => String(r[1]||"").trim() !== "")
+    // Proveedores — columnas: A(0) | B(1 nombre) | C(2 tipo) | D(3 límite) | E(4 activo) | F(5 notas)
+    const wsProv = wb.Sheets["🏦 Proveedores"] || wb.Sheets[wb.SheetNames[3]];
+    catalog.proveedores = readSheet(wsProv)
       .filter(r => String(r[4]||"").trim() !== "No")
-      .map(r => ({ nombre: String(r[1]).trim(), tipo: String(r[2]||"").trim() }));
+      .map(r => ({
+        nombre: String(r[1]).trim(),
+        tipo:   String(r[2]||"").trim()
+      }));
 
-    fillDropdowns();
-    statusEl.textContent = "Catalogos listos: " + cat.obras.length + " obras, " + cat.personas.length + " personas, " + cat.tipos.length + " tipos.";
-    if (infoEl) { infoEl.className = "success-box"; infoEl.textContent = "Catalogo cargado correctamente desde GitHub."; }
+    populateDropdowns();
+    if(statusEl) statusEl.textContent = "✅ Catálogos actualizados desde GitHub";
+    if(catInfo)  { catInfo.className = "success"; catInfo.textContent = "✅ Catálogo cargado correctamente desde GitHub. Los desplegables están actualizados."; }
 
-  } catch (err) {
-    console.warn("Catalogo no disponible:", err.message);
-    useFallback();
-    statusEl.textContent = "Usando catalogo local (sube catalogo.xlsx a GitHub para actualizar).";
-    if (infoEl) infoEl.textContent = "No se encontro catalogo.xlsx en GitHub. Error: " + err.message;
+  } catch(e) {
+    console.warn("Catálogo no disponible, usando valores por defecto:", e.message);
+    loadFallbackCatalog();
+    if(statusEl) statusEl.textContent = "⚠️ Usando catálogo base — sube catalogo.xlsx a GitHub para personalizarlo";
+    if(catInfo)  catInfo.textContent  = `⚠️ No se encontró el archivo catalogo.xlsx en GitHub. Súbelo a tu repositorio para que los desplegables se actualicen. Error: ${e.message}`;
   }
 }
 
-function useFallback() {
-  cat.obras = [
-    {nombre:"Culiacan", estado:"Sinaloa"},
-    {nombre:"Higueras", estado:"Sinaloa"},
-    {nombre:"Coyotitan", estado:"Sinaloa"},
-    {nombre:"Herradura", estado:"Nuevo Leon"},
-    {nombre:"Suacero", estado:"San Luis Potosi"},
-    {nombre:"Oficina General", estado:""}
+function loadFallbackCatalog() {
+  catalog.obras = [
+    {nombre:"Culiacán",estado:"Sinaloa"},{nombre:"Higueras",estado:"Sinaloa"},
+    {nombre:"Coyotitán",estado:"Sinaloa"},{nombre:"Herradura",estado:"Nuevo León"},
+    {nombre:"Suacero",estado:"San Luis Potosí"},{nombre:"Oficina General",estado:""}
   ];
-  cat.personas = [
-    {nombre:"Hector Villasana"},{nombre:"Nancy Vazquez"},
-    {nombre:"Emanuel Hernandez"},{nombre:"Juan Manuel"},
-    {nombre:"Miguel Angel Martinez"},{nombre:"Miguel Gonzalez"},
-    {nombre:"Miguel"},{nombre:"Titular / Oficina"}
+  catalog.personas = [
+    "Hector Villasana","Nancy Vazquez","Emanuel Hernandez",
+    "Juan Manuel","Miguel Ángel Martinez","Miguel Gonzalez","Miguel","Titular / Oficina"
+  ].map(n=>({nombre:n,rol:""}));
+  catalog.tipos = [
+    {nombre:"Diesel / Combustible",categoria:"Combustibles"},
+    {nombre:"Aerogas",categoria:"Combustibles"},
+    {nombre:"Refacciones",categoria:"Mantenimiento"},
+    {nombre:"Llantas / Mantenimiento",categoria:"Mantenimiento"},
+    {nombre:"Material Construcción",categoria:"Insumos Obra"},
+    {nombre:"Nómina / Sueldos",categoria:"Operativos"},
+    {nombre:"Viáticos",categoria:"Operativos"},
+    {nombre:"Transporte Emergencia",categoria:"Operativos"},
+    {nombre:"Ingreso de Obra",categoria:"Ingresos"},
+    {nombre:"Colegiatura",categoria:"Gastos Personales"},
+    {nombre:"Restaurante / Comida",categoria:"Gastos Personales"},
+    {nombre:"Vacaciones / Viaje",categoria:"Gastos Personales"},
+    {nombre:"Otro",categoria:"General"},
   ];
-  cat.tipos = [
-    {nombre:"Diesel / Combustible", categoria:"Combustibles"},
-    {nombre:"Aerogas", categoria:"Combustibles"},
-    {nombre:"Refacciones", categoria:"Mantenimiento"},
-    {nombre:"Llantas / Mantenimiento", categoria:"Mantenimiento"},
-    {nombre:"Herramienta Menor", categoria:"Mantenimiento"},
-    {nombre:"Material Construccion", categoria:"Insumos Obra"},
-    {nombre:"Nomina / Sueldos", categoria:"Operativos"},
-    {nombre:"Viaticos", categoria:"Operativos"},
-    {nombre:"Transporte Emergencia", categoria:"Operativos"},
-    {nombre:"Ingreso de Obra", categoria:"Ingresos"},
-    {nombre:"Colegiatura", categoria:"Gastos Personales"},
-    {nombre:"Restaurante / Comida", categoria:"Gastos Personales"},
-    {nombre:"Vacaciones / Viaje", categoria:"Gastos Personales"},
-    {nombre:"Otro", categoria:"General"}
+  catalog.proveedores = [
+    {nombre:"Gaspeed",tipo:"Crédito"},{nombre:"Aerogas",tipo:"Crédito"},
+    {nombre:"Cadeco",tipo:"Crédito"},{nombre:"Volkswagen Leasing",tipo:"Crédito"},
+    {nombre:"Eurollantas",tipo:"Crédito"},
+    {nombre:"Tarjeta Hector Villasana",tipo:"Tarjeta Trabajador"},
+    {nombre:"Tarjeta Nancy Vazquez",tipo:"Tarjeta Trabajador"},
+    {nombre:"Tarjeta Emanuel Hernandez",tipo:"Tarjeta Trabajador"},
+    {nombre:"Tarjeta Juan Manuel",tipo:"Tarjeta Trabajador"},
+    {nombre:"Tarjeta Miguel Á. Martinez",tipo:"Tarjeta Trabajador"},
+    {nombre:"Tarjeta Miguel Gonzalez",tipo:"Tarjeta Trabajador"},
+    {nombre:"Efectivo",tipo:"Pago directo"},{nombre:"Transferencia",tipo:"Pago directo"},
   ];
-  cat.proveedores = [
-    {nombre:"Gaspeed", tipo:"Credito — Gasolineras"},
-    {nombre:"Aerogas", tipo:"Credito — Gas LP"},
-    {nombre:"Cadeco", tipo:"Credito — Refacciones"},
-    {nombre:"Volkswagen Leasing", tipo:"Credito — Vehiculos"},
-    {nombre:"Eurollantas", tipo:"Credito — Llantas"},
-    {nombre:"Tarjeta Hector Villasana", tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Nancy Vazquez", tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Emanuel Hernandez", tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Juan Manuel", tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Miguel Martinez", tipo:"Tarjeta Trabajador"},
-    {nombre:"Tarjeta Miguel Gonzalez", tipo:"Tarjeta Trabajador"},
-    {nombre:"Efectivo", tipo:"Pago directo"},
-    {nombre:"Transferencia", tipo:"Pago directo"}
-  ];
-  fillDropdowns();
+  populateDropdowns();
 }
 
-// ── LLENA DESPLEGABLES ───────────────────────────
-function fillDropdowns() {
-  // OBRAS — agrupadas por estado, muestra solo nombre de la obra
+function populateDropdowns() {
+  // ── OBRAS: agrupadas por estado, solo muestra el nombre de la obra ──
   const obraSel = document.getElementById("f-obra-sel");
   const obraFil = document.getElementById("fil-obra");
-  if (obraSel) {
-    obraSel.innerHTML = '<option value="">-- Seleccionar obra --</option>';
-    const estados = [...new Set(cat.obras.map(o => o.estado).filter(Boolean))];
+
+  const buildObras = (sel, isFilter) => {
+    sel.innerHTML = `<option value="">${isFilter ? "Todas las obras" : "— Seleccionar de la lista —"}</option>`;
+    const estados = [...new Set(catalog.obras.map(o => o.estado).filter(Boolean))];
     estados.forEach(est => {
       const og = document.createElement("optgroup");
-      og.label = est;
-      cat.obras.filter(o => o.estado === est).forEach(o => {
-        const op = document.createElement("option");
-        op.value = o.nombre; op.textContent = o.nombre;
-        og.appendChild(op);
+      og.label = "── " + est + " ──";
+      catalog.obras.filter(o => o.estado === est).forEach(o => {
+        og.appendChild(Object.assign(document.createElement("option"), { value: o.nombre, textContent: o.nombre }));
       });
-      obraSel.appendChild(og);
+      sel.appendChild(og);
     });
-    cat.obras.filter(o => !o.estado).forEach(o => {
-      const op = document.createElement("option");
-      op.value = o.nombre; op.textContent = o.nombre;
-      obraSel.appendChild(op);
+    // Obras sin estado asignado
+    catalog.obras.filter(o => !o.estado).forEach(o => {
+      sel.appendChild(Object.assign(document.createElement("option"), { value: o.nombre, textContent: o.nombre }));
     });
-    const opNA = document.createElement("option");
-    opNA.value = "N/A Personal"; opNA.textContent = "N/A Personal";
-    obraSel.appendChild(opNA);
-  }
-  if (obraFil) {
-    obraFil.innerHTML = '<option value="">Todas las obras</option>';
-    cat.obras.forEach(o => {
-      const op = document.createElement("option");
-      op.value = o.nombre; op.textContent = o.nombre;
-      obraFil.appendChild(op);
-    });
-  }
+    if (!isFilter) {
+      sel.appendChild(Object.assign(document.createElement("option"), { value: "N/A (Personal)", textContent: "N/A (Personal)" }));
+    }
+  };
 
-  // TIPOS — agrupados por categoria, muestra nombre del concepto
+  if (obraSel) {
+    buildObras(obraSel, false);
+    // Al seleccionar obra, autocompleta el estado
+    obraSel.addEventListener("change", () => {
+      const obraObj = catalog.obras.find(o => o.nombre === obraSel.value);
+      const estadoEl = document.getElementById("f-estado");
+      if (estadoEl && obraObj) estadoEl.value = obraObj.estado || "";
+    });
+  }
+  if (obraFil) buildObras(obraFil, true);
+
+  // ── TIPOS: muestra el nombre del concepto, agrupado por categoría ──
   const tipoSel = document.getElementById("f-tipo-sel");
   if (tipoSel) {
-    tipoSel.innerHTML = '<option value="">-- Seleccionar tipo --</option>';
-    const cats = [...new Set(cat.tipos.map(t => t.categoria).filter(Boolean))];
-    cats.forEach(c => {
-      const og = document.createElement("optgroup"); og.label = c;
-      cat.tipos.filter(t => t.categoria === c).forEach(t => {
-        const op = document.createElement("option");
-        op.value = t.nombre; op.textContent = t.nombre;
-        og.appendChild(op);
-      });
+    tipoSel.innerHTML = '<option value="">— Seleccionar de la lista —</option>';
+    const cats = [...new Set(catalog.tipos.map(t => t.categoria).filter(Boolean))];
+    cats.forEach(cat => {
+      const og = document.createElement("optgroup");
+      og.label = cat;
+      catalog.tipos
+        .filter(t => t.categoria === cat)
+        .forEach(t => og.appendChild(Object.assign(document.createElement("option"), { value: t.nombre, textContent: t.nombre })));
       tipoSel.appendChild(og);
     });
-    cat.tipos.filter(t => !t.categoria).forEach(t => {
-      const op = document.createElement("option");
-      op.value = t.nombre; op.textContent = t.nombre;
-      tipoSel.appendChild(op);
+    // Tipos sin categoría
+    catalog.tipos.filter(t => !t.categoria).forEach(t => {
+      tipoSel.appendChild(Object.assign(document.createElement("option"), { value: t.nombre, textContent: t.nombre }));
     });
   }
 
-  // PROVEEDORES — agrupados por tipo, muestra nombre del proveedor
+  // ── PROVEEDORES: muestra el nombre, agrupado por tipo de cuenta ──
   const provSel = document.getElementById("f-prov-sel");
   if (provSel) {
-    provSel.innerHTML = '<option value="">-- Seleccionar --</option>';
-    const tipos = [...new Set(cat.proveedores.map(p => p.tipo).filter(Boolean))];
-    tipos.forEach(t => {
-      const og = document.createElement("optgroup"); og.label = t;
-      cat.proveedores.filter(p => p.tipo === t).forEach(p => {
-        const op = document.createElement("option");
-        op.value = p.nombre; op.textContent = p.nombre;
-        og.appendChild(op);
-      });
+    provSel.innerHTML = '<option value="">— Seleccionar —</option>';
+    const tiposProv = [...new Set(catalog.proveedores.map(p => p.tipo).filter(Boolean))];
+    tiposProv.forEach(tipo => {
+      const og = document.createElement("optgroup");
+      og.label = tipo;
+      catalog.proveedores
+        .filter(p => p.tipo === tipo)
+        .forEach(p => og.appendChild(Object.assign(document.createElement("option"), { value: p.nombre, textContent: p.nombre })));
       provSel.appendChild(og);
     });
-    cat.proveedores.filter(p => !p.tipo).forEach(p => {
-      const op = document.createElement("option");
-      op.value = p.nombre; op.textContent = p.nombre;
-      provSel.appendChild(op);
+    // Proveedores sin tipo
+    catalog.proveedores.filter(p => !p.tipo).forEach(p => {
+      provSel.appendChild(Object.assign(document.createElement("option"), { value: p.nombre, textContent: p.nombre }));
     });
   }
 
-  // PERSONAS — lista simple con nombre completo
+  // ── PERSONAS: muestra el nombre completo ──
   const quienSel = document.getElementById("f-quien-sel");
   if (quienSel) {
-    quienSel.innerHTML = '<option value="">-- Seleccionar --</option>';
-    cat.personas.forEach(p => {
-      const op = document.createElement("option");
-      op.value = p.nombre; op.textContent = p.nombre;
-      quienSel.appendChild(op);
+    quienSel.innerHTML = '<option value="">— Seleccionar —</option>';
+    catalog.personas.forEach(p => {
+      quienSel.appendChild(Object.assign(document.createElement("option"), { value: p.nombre, textContent: p.nombre }));
     });
   }
 }
 
-// ── CLASE TOGGLE ─────────────────────────────────
-function initClaseToggle() {
-  document.querySelectorAll(".clase-opt").forEach(r =>
-    r.addEventListener("change", () => {
-      document.getElementById("f-clase").value = r.value;
-    })
-  );
-}
-
-// ── NAVEGACION ───────────────────────────────────
+// ── NAVIGATION ─────────────────────────────────
 function initNav() {
   document.querySelectorAll(".nav-btn").forEach(btn =>
     btn.addEventListener("click", () => setTab(btn.dataset.tab))
   );
 }
 function setTab(tab) {
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-  document.getElementById("screen-" + tab).classList.add("active");
-  document.querySelector(".nav-btn[data-tab='" + tab + "']").classList.add("active");
-  if (tab === "resumen")     setTimeout(renderCharts, 60);
-  if (tab === "movimientos") renderMovimientos();
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById(`screen-${tab}`).classList.add("active");
+  document.querySelector(`.nav-btn[data-tab="${tab}"]`).classList.add("active");
+  if(tab==="resumen")      setTimeout(renderCharts, 50);
+  if(tab==="movimientos")  renderMovimientos();
 }
 
-// ── FIREBASE ─────────────────────────────────────
+// ── FIREBASE ────────────────────────────────────
 function listenFirebase() {
   const dot = document.getElementById("sync-dot");
   onValue(dbRef, snap => {
     allRecords = [];
-    snap.forEach(child => allRecords.push({ key: child.key, ...child.val() }));
-    allRecords.sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""));
+    snap.forEach(child => allRecords.push({ key:child.key, ...child.val() }));
+    allRecords.sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
     updateKPIs();
     renderMovimientos();
-    if (document.getElementById("screen-resumen").classList.contains("active")) renderCharts();
-    if (dot) { dot.className = "sync-dot ok"; dot.title = "Conectado — " + allRecords.length + " registros"; }
-  }, () => {
-    if (dot) { dot.className = "sync-dot err"; dot.title = "Error de conexion"; }
-  });
+    if(dot) { dot.className="sync-dot ok"; dot.title="Conectado"; }
+  }, () => { if(dot){ dot.className="sync-dot err"; dot.title="Error de conexión"; } });
 }
 
-// ── FORMULARIO ───────────────────────────────────
-function initForm() {
+// ── FORM ────────────────────────────────────────
+function initForm(db, ref, push, remove, update) {
   document.getElementById("expense-form").addEventListener("submit", async e => {
     e.preventDefault();
-    const tipo  = document.getElementById("f-tipo").value  || document.getElementById("f-tipo-libre").value.trim();
-    const obra  = document.getElementById("f-obra").value  || document.getElementById("f-obra-libre").value.trim();
-    const prov  = document.getElementById("f-proveedor").value || document.getElementById("f-prov-libre").value.trim();
-    const quien = document.getElementById("f-quien").value || document.getElementById("f-quien-libre").value.trim();
+    const tipo  = document.getElementById("f-tipo").value  || document.getElementById("f-tipo-txt").value.trim();
+    const obra  = document.getElementById("f-obra").value  || document.getElementById("f-obra-txt").value.trim();
+    const prov  = document.getElementById("f-proveedor").value || document.getElementById("f-prov-txt").value.trim();
+    const quien = document.getElementById("f-quien").value || document.getElementById("f-quien-txt").value.trim();
+
     if (!tipo) { alert("Selecciona o escribe el tipo de gasto"); return; }
     if (!obra) { alert("Selecciona o escribe la obra"); return; }
 
     const record = {
-      fecha:       document.getElementById("f-fecha").value,
+      fecha: document.getElementById("f-fecha").value,
       tipo, obra,
-      estado:      document.getElementById("f-estado").value,
+      estado:      document.getElementById("f-estado").value.trim(),
       proveedor:   prov,
       quien:       quien,
       clase:       document.getElementById("f-clase").value,
-      monto:       parseFloat(document.getElementById("f-monto").value) || 0,
+      monto:       parseFloat(document.getElementById("f-monto").value)||0,
       descripcion: document.getElementById("f-desc").value.trim(),
       factura:     document.getElementById("f-factura").value.trim(),
       notas:       document.getElementById("f-notas").value.trim(),
@@ -650,25 +650,25 @@ function initForm() {
     };
 
     const btn = document.getElementById("submit-btn");
-    btn.disabled = true; btn.textContent = "Guardando...";
+    btn.disabled = true; btn.textContent = "Guardando…";
     try {
       if (editingKey) {
-        await update(ref(db, "gastos/" + editingKey), record);
+        await update(ref(db,`gastos/${editingKey}`), record);
         editingKey = null;
         document.getElementById("form-title").textContent = "Nuevo registro";
         document.getElementById("cancel-btn").style.display = "none";
-        btn.textContent = "Actualizado";
+        btn.textContent = "✓ Actualizado";
       } else {
         await push(dbRef, record);
-        btn.textContent = "Guardado";
+        btn.textContent = "✓ Guardado";
       }
       resetForm();
-    } catch (err) {
+    } catch(err) {
       alert("Error al guardar: " + err.message);
-      btn.textContent = "Guardar registro";
+      btn.textContent = "💾 Guardar registro";
     }
     btn.disabled = false;
-    setTimeout(() => btn.textContent = "Guardar registro", 2000);
+    setTimeout(()=>{ btn.textContent = "💾 Guardar registro"; }, 2000);
   });
 
   document.getElementById("cancel-btn").addEventListener("click", () => {
@@ -680,213 +680,147 @@ function initForm() {
 
 function resetForm() {
   document.getElementById("expense-form").reset();
-  document.getElementById("f-fecha").value  = todayStr();
-  document.getElementById("f-clase").value  = "Empresa";
-  document.getElementById("c-emp").checked  = true;
+  document.getElementById("f-fecha").value = today();
+  document.getElementById("f-clase").value = "Empresa";
+  document.getElementById("c-emp").checked = true;
   document.getElementById("f-estado").value = "";
-  document.getElementById("estado-hint").style.display = "none";
-  ["f-tipo","f-obra","f-proveedor","f-quien"].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = "";
-  });
+  ["f-tipo","f-obra","f-proveedor","f-quien"].forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
 }
 
-// ── EDITAR / BORRAR ──────────────────────────────
-window.editRec = key => {
-  const r = allRecords.find(x => x.key === key); if (!r) return;
-  editingKey = key; setTab("captura");
-  setTimeout(() => {
-    document.getElementById("f-fecha").value   = r.fecha || "";
-    document.getElementById("f-monto").value   = r.monto || "";
-    document.getElementById("f-desc").value    = r.descripcion || "";
-    document.getElementById("f-factura").value = r.factura || "";
-    document.getElementById("f-notas").value   = r.notas || "";
-    document.getElementById("f-clase").value   = r.clase || "Empresa";
-    document.getElementById("f-estado").value  = r.estado || "";
-    if (r.clase === "Personal") document.getElementById("c-per").checked = true;
-    else document.getElementById("c-emp").checked = true;
-    setCombo("f-tipo-sel",  "f-tipo-libre",  "f-tipo",       r.tipo || "");
-    setCombo("f-obra-sel",  "f-obra-libre",  "f-obra",       r.obra || "");
-    setCombo("f-prov-sel",  "f-prov-libre",  "f-proveedor",  r.proveedor || "");
-    setCombo("f-quien-sel", "f-quien-libre", "f-quien",      r.quien || "");
-    if (r.estado) {
-      document.getElementById("estado-hint-val").textContent = r.estado;
-      document.getElementById("estado-hint").style.display = "block";
-    }
-    document.getElementById("form-title").textContent = "Editar registro";
-    document.getElementById("cancel-btn").style.display = "flex";
-  }, 80);
-};
-
-function setCombo(selId, libId, hidId, val) {
-  const sel = document.getElementById(selId);
-  const lib = document.getElementById(libId);
-  const hid = document.getElementById(hidId);
-  if (!sel || !lib || !hid) return;
-  const found = [...sel.options].find(o => o.value === val);
-  if (found) { sel.value = val; lib.value = ""; }
-  else        { sel.value = ""; lib.value = val; }
-  hid.value = val;
-}
-
-window.delRec = async key => {
-  if (!confirm("Eliminar este registro?")) return;
-  await remove(ref(db, "gastos/" + key));
-};
-
-window.applyFilters = () => renderMovimientos();
-
-// ── TABLA MOVIMIENTOS ────────────────────────────
-function renderMovimientos() {
-  const fc = document.getElementById("fil-clase")?.value || "";
-  const fo = document.getElementById("fil-obra")?.value  || "";
-  const fm = document.getElementById("fil-mes")?.value   || "";
-  let data = [...allRecords];
-  if (fc) data = data.filter(r => r.clase === fc);
-  if (fo) data = data.filter(r => r.obra  === fo);
-  if (fm) data = data.filter(r => (r.fecha||"").startsWith(fm));
-  const tbody = document.getElementById("tabla-body");
-  if (!tbody) return;
-  if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#888">Sin registros</td></tr>';
-    return;
-  }
-  tbody.innerHTML = data.map(r => {
-    const isIng = r.tipo === "Ingreso de Obra";
-    return '<tr class="row-' + (r.clase==="Empresa"?"emp":"per") + '">' +
-      '<td class="fecha-cell">' + (r.fecha||"") + '</td>' +
-      '<td><span class="tag ' + tipoClass(r.tipo) + '">' + (r.tipo||"") + '</span></td>' +
-      '<td class="hide-xs" style="font-size:12px">' + (r.obra||"") + '</td>' +
-      '<td class="hide-sm" style="font-size:12px">' + (r.proveedor||"") + '</td>' +
-      '<td><span class="badge-clase ' + (r.clase==="Empresa"?"b-emp":"b-per") + '">' + (r.clase||"") + '</span></td>' +
-      '<td class="monto-cell' + (isIng?" pos":"") + '">' + (isIng?"+":"") + fmt(r.monto) + '</td>' +
-      '<td><button class="act-btn" onclick="editRec(\'' + r.key + '\')">edit</button>' +
-      '<button class="act-btn" onclick="delRec(\'' + r.key + '\')">del</button></td>' +
-      '</tr>';
-  }).join("");
-}
-
-// ── KPIs ─────────────────────────────────────────
+// ── KPIs ────────────────────────────────────────
 function updateKPIs() {
-  const mes = new Date().toISOString().slice(0,7);
-  const m   = allRecords.filter(r => (r.fecha||"").startsWith(mes));
-  const empM = m.filter(r => r.clase==="Empresa" && r.tipo!=="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
-  const perM = m.filter(r => r.clase==="Personal").reduce((s,r)=>s+r.monto,0);
-  const dies = m.filter(r => r.tipo==="Diesel / Combustible" || r.tipo==="Aerogas").reduce((s,r)=>s+r.monto,0);
-  const ingT = allRecords.filter(r => r.tipo==="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
-  const gasT = allRecords.filter(r => r.clase==="Empresa" && r.tipo!=="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
+  const mes = currentMonth();
+  const thisMes = allRecords.filter(r=>(r.fecha||"").startsWith(mes));
+  const empM  = thisMes.filter(r=>r.clase==="Empresa"&&r.tipo!=="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
+  const perM  = thisMes.filter(r=>r.clase==="Personal").reduce((s,r)=>s+r.monto,0);
+  const dies  = thisMes.filter(r=>["Diesel / Combustible","Aerogas"].includes(r.tipo)).reduce((s,r)=>s+r.monto,0);
+  const ingT  = allRecords.filter(r=>r.tipo==="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
+  const gasT  = allRecords.filter(r=>r.clase==="Empresa"&&r.tipo!=="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
   setText("kpi-empresa",  fmt(empM));
   setText("kpi-personal", fmt(perM));
   setText("kpi-diesel",   fmt(dies));
-  setText("kpi-registros", m.length + " mov.");
+  const bal = ingT - gasT;
   const balEl = document.getElementById("kpi-balance");
-  if (balEl) {
-    const bal = ingT - gasT;
-    balEl.textContent = fmt(bal);
-    balEl.style.color = bal >= 0 ? "var(--green)" : "var(--red)";
-  }
+  if(balEl){ balEl.textContent=fmt(bal); balEl.style.color=bal>=0?"var(--green)":"var(--red)"; }
+  setText("kpi-registros", thisMes.length+" mov.");
 }
 
-// ── GRAFICAS ─────────────────────────────────────
+// ── MOVIMIENTOS ────────────────────────────────
+function renderMovimientos() {
+  const fc = document.getElementById("fil-clase")?.value||"";
+  const fo = document.getElementById("fil-obra")?.value||"";
+  const fm = document.getElementById("fil-mes")?.value||"";
+  let data = [...allRecords];
+  if(fc) data=data.filter(r=>r.clase===fc);
+  if(fo) data=data.filter(r=>r.obra===fo);
+  if(fm) data=data.filter(r=>(r.fecha||"").startsWith(fm));
+  const tbody = document.getElementById("tabla-body");
+  if(!tbody) return;
+  if(!data.length){ tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:2rem;color:#888">Sin registros</td></tr>`; return; }
+  tbody.innerHTML = data.map(r=>`
+    <tr class="row-${r.clase==="Empresa"?"emp":"per"}">
+      <td class="fecha-cell">${r.fecha||""}</td>
+      <td><span class="tag ${tipoClass(r.tipo)}">${r.tipo||""}</span></td>
+      <td class="hide-xs" style="font-size:12px">${(r.obra||"").replace(" (SLP)","").replace(" (NL)","").replace(" (SIN)","")}</td>
+      <td class="hide-sm" style="font-size:12px">${r.proveedor||""}</td>
+      <td><span class="badge-clase ${r.clase==="Empresa"?"b-emp":"b-per"}">${r.clase||""}</span></td>
+      <td class="monto-cell ${r.tipo==="Ingreso de Obra"?"pos":""}">${r.tipo==="Ingreso de Obra"?"+":""}${fmt(r.monto)}</td>
+      <td><button class="act-btn" onclick="editRec('${r.key}')">✏️</button><button class="act-btn" onclick="delRec('${r.key}')">🗑</button></td>
+    </tr>`).join("");
+}
+window.applyFilters = () => renderMovimientos();
+window.delRec = async key => {
+  if(!confirm("¿Eliminar este registro?")) return;
+  const { getDatabase:gd, ref:rf, remove:rm } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+  await rm(ref(db,`gastos/${key}`));
+};
+window.editRec = key => {
+  const r = allRecords.find(x=>x.key===key); if(!r) return;
+  editingKey = key; setTab("captura");
+  setTimeout(()=>{
+    document.getElementById("f-fecha").value  = r.fecha||"";
+    document.getElementById("f-monto").value  = r.monto||"";
+    document.getElementById("f-desc").value   = r.descripcion||"";
+    document.getElementById("f-factura").value= r.factura||"";
+    document.getElementById("f-notas").value  = r.notas||"";
+    document.getElementById("f-clase").value  = r.clase||"Empresa";
+    // Set combos
+    document.getElementById("f-estado").value  = r.estado||"";
+    setCombo("f-tipo-sel","f-tipo-txt","f-tipo", r.tipo||"");
+    setCombo("f-obra-sel","f-obra-txt","f-obra", r.obra||"");
+    setCombo("f-prov-sel","f-prov-txt","f-proveedor", r.proveedor||"");
+    setCombo("f-quien-sel","f-quien-txt","f-quien", r.quien||"");
+    if(r.clase==="Personal") document.getElementById("c-per").checked=true;
+    else document.getElementById("c-emp").checked=true;
+    document.getElementById("form-title").textContent="Editar registro";
+    document.getElementById("cancel-btn").style.display="flex";
+  }, 80);
+};
+function setCombo(selId, txtId, hidId, val) {
+  const sel=document.getElementById(selId), txt=document.getElementById(txtId), hid=document.getElementById(hidId);
+  if(!sel||!txt||!hid) return;
+  const opt = [...sel.options].find(o=>o.value===val);
+  if(opt){ sel.value=val; txt.value=""; }
+  else   { sel.value="";  txt.value=val; }
+  hid.value=val;
+}
+
+// ── CHARTS ─────────────────────────────────────
 function renderCharts() {
   updateKPIs();
-  const COLS = ["#1A2332","#E8A217","#27AE60","#2980B9","#8E44AD","#C0392B","#16A085","#D35400"];
-  const emp  = allRecords.filter(r => r.clase==="Empresa" && r.tipo!=="Ingreso de Obra");
+  const COLORS=["#1A2332","#E8A217","#27AE60","#2980B9","#8E44AD","#C0392B","#16A085","#D35400"];
+  const emp=allRecords.filter(r=>r.clase==="Empresa"&&r.tipo!=="Ingreso de Obra");
   const catMap={};
-  emp.forEach(r => { catMap[r.tipo] = (catMap[r.tipo]||0) + r.monto; });
-  const catL = Object.keys(catMap).sort((a,b) => catMap[b]-catMap[a]).slice(0,8);
+  emp.forEach(r=>{ catMap[r.tipo]=(catMap[r.tipo]||0)+r.monto; });
+  const catL=Object.keys(catMap).sort((a,b)=>catMap[b]-catMap[a]).slice(0,8);
+
   const obraMap={};
-  emp.forEach(r => { const o=r.obra||"?"; obraMap[o]=(obraMap[o]||0)+r.monto; });
-  const obraL = Object.keys(obraMap).sort((a,b) => obraMap[b]-obraMap[a]);
-  const empT = emp.reduce((s,r)=>s+r.monto,0);
-  const perT = allRecords.filter(r=>r.clase==="Personal").reduce((s,r)=>s+r.monto,0);
-  const ingT = allRecords.filter(r=>r.tipo==="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
-  const mMap={};
-  allRecords.forEach(r => {
-    if (!r.fecha) return;
-    const m = r.fecha.slice(0,7);
-    if (!mMap[m]) mMap[m]={e:0,p:0,i:0};
-    if (r.tipo==="Ingreso de Obra") mMap[m].i+=r.monto;
-    else if (r.clase==="Empresa")   mMap[m].e+=r.monto;
-    else                            mMap[m].p+=r.monto;
-  });
-  const months = Object.keys(mMap).sort();
-  const MNAMES = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-  const mLabels = months.map(m => { const [y,mo]=m.split("-"); return MNAMES[+mo]+" "+y.slice(2); });
+  emp.forEach(r=>{ const o=(r.obra||"").replace(/ \((SLP|NL|SIN)\)/,""); obraMap[o]=(obraMap[o]||0)+r.monto; });
+  const obraL=Object.keys(obraMap).sort((a,b)=>obraMap[b]-obraMap[a]);
 
-  const kill = id => { if (charts[id]) { charts[id].destroy(); delete charts[id]; } };
-  ["chartCat","chartObra","chartClase","chartTrend"].forEach(kill);
-  const barOpts = () => ({
-    responsive:true, maintainAspectRatio:false,
-    plugins:{legend:{display:false}},
-    scales:{x:{ticks:{callback:v=>"$"+fmtK(v)},grid:{color:"#f0f0f0"}},y:{grid:{display:false}}}
-  });
-  const el = id => document.getElementById(id);
+  const empT=emp.reduce((s,r)=>s+r.monto,0);
+  const perT=allRecords.filter(r=>r.clase==="Personal").reduce((s,r)=>s+r.monto,0);
+  const ingT=allRecords.filter(r=>r.tipo==="Ingreso de Obra").reduce((s,r)=>s+r.monto,0);
 
-  if (el("chartCat") && catL.length)
-    charts.chartCat = new Chart(el("chartCat"), {type:"bar", data:{labels:catL, datasets:[{data:catL.map(k=>catMap[k]),backgroundColor:COLS,borderRadius:4}]}, options:{...barOpts(),indexAxis:"y"}});
-  if (el("chartObra") && obraL.length)
-    charts.chartObra = new Chart(el("chartObra"), {type:"doughnut", data:{labels:obraL, datasets:[{data:obraL.map(k=>obraMap[k]),backgroundColor:COLS,borderWidth:2,borderColor:"#fff"}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}}}}});
-  if (el("chartClase"))
-    charts.chartClase = new Chart(el("chartClase"), {type:"bar", data:{labels:["Empresa","Personal","Ingresos"], datasets:[{data:[empT,perT,ingT],backgroundColor:["#1A2332","#C0392B","#27AE60"],borderRadius:6}]}, options:barOpts()});
-  if (el("chartTrend") && months.length)
-    charts.chartTrend = new Chart(el("chartTrend"), {type:"line", data:{labels:mLabels, datasets:[
-      {label:"Empresa",data:months.map(m=>mMap[m].e),borderColor:"#1A2332",backgroundColor:"rgba(26,35,50,.1)",fill:true,tension:.4,pointRadius:4},
-      {label:"Personal",data:months.map(m=>mMap[m].p),borderColor:"#C0392B",backgroundColor:"rgba(192,57,43,.07)",fill:true,tension:.4,pointRadius:4},
-      {label:"Ingresos",data:months.map(m=>mMap[m].i),borderColor:"#27AE60",backgroundColor:"rgba(39,174,96,.07)",fill:true,tension:.4,pointRadius:4}
-    ]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}}},scales:{y:{ticks:{callback:v=>"$"+fmtK(v)},grid:{color:"#f0f0f0"}},x:{grid:{display:false}}}}});
+  const monthMap={};
+  allRecords.forEach(r=>{
+    if(!r.fecha) return;
+    const m=r.fecha.slice(0,7);
+    if(!monthMap[m]) monthMap[m]={emp:0,per:0,ing:0};
+    if(r.tipo==="Ingreso de Obra") monthMap[m].ing+=r.monto;
+    else if(r.clase==="Empresa")   monthMap[m].emp+=r.monto;
+    else                           monthMap[m].per+=r.monto;
+  });
+  const months=Object.keys(monthMap).sort();
+  const mLabels=months.map(m=>{ const[y,mo]=m.split("-"); return ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][+mo]+" "+y.slice(2); });
+
+  const destroy=id=>{ if(charts[id]){ charts[id].destroy(); delete charts[id]; } };
+  destroy("chartCat"); destroy("chartObra"); destroy("chartClase"); destroy("chartTrend");
+
+  const barOpts=()=>({ responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>"$"+fmtK(v)},grid:{color:"#f0f0f0"}},y:{grid:{display:false}}} });
+  const ctx=id=>document.getElementById(id);
+
+  if(ctx("chartCat")) charts["chartCat"]=new Chart(ctx("chartCat"),{type:"bar",data:{labels:catL,datasets:[{data:catL.map(k=>catMap[k]),backgroundColor:COLORS,borderRadius:4}]},options:{...barOpts(),indexAxis:"y"}});
+  if(ctx("chartObra")&&obraL.length) charts["chartObra"]=new Chart(ctx("chartObra"),{type:"doughnut",data:{labels:obraL,datasets:[{data:obraL.map(k=>obraMap[k]),backgroundColor:COLORS,borderWidth:2,borderColor:"#fff"}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}}}}});
+  if(ctx("chartClase")) charts["chartClase"]=new Chart(ctx("chartClase"),{type:"bar",data:{labels:["Empresa","Personal","Ingresos"],datasets:[{data:[empT,perT,ingT],backgroundColor:["#1A2332","#C0392B","#27AE60"],borderRadius:6}]},options:barOpts()});
+  if(ctx("chartTrend")&&months.length) charts["chartTrend"]=new Chart(ctx("chartTrend"),{type:"line",data:{labels:mLabels,datasets:[{label:"Empresa",data:months.map(m=>monthMap[m].emp),borderColor:"#1A2332",backgroundColor:"rgba(26,35,50,.1)",fill:true,tension:.4,pointRadius:4},{label:"Personal",data:months.map(m=>monthMap[m].per),borderColor:"#C0392B",backgroundColor:"rgba(192,57,43,.07)",fill:true,tension:.4,pointRadius:4},{label:"Ingresos",data:months.map(m=>monthMap[m].ing),borderColor:"#27AE60",backgroundColor:"rgba(39,174,96,.07)",fill:true,tension:.4,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}}},scales:{y:{ticks:{callback:v=>"$"+fmtK(v)},grid:{color:"#f0f0f0"}},x:{grid:{display:false}}}}});
 }
 
-// ── HELPERS ──────────────────────────────────────
-function todayStr() { return new Date().toISOString().split("T")[0]; }
-function fmt(n) { return "$" + (n||0).toLocaleString("es-MX", {minimumFractionDigits:0}); }
-function fmtK(n) { return n >= 1000 ? Math.round(n/1000) + "k" : n; }
-function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
-function tipoClass(t) {
-  const m = {
-    "Diesel / Combustible":"t-comb","Aerogas":"t-comb",
-    "Nomina / Sueldos":"t-nom","Viaticos":"t-viat",
-    "Refacciones":"t-ref","Llantas / Mantenimiento":"t-ref",
-    "Ingreso de Obra":"t-ing","Colegiatura":"t-per",
-    "Restaurante / Comida":"t-per","Vacaciones / Viaje":"t-per"
-  };
-  return m[t] || "t-otro";
+// ── HELPERS ─────────────────────────────────────
+const today=()=>new Date().toISOString().split("T")[0];
+const currentMonth=()=>new Date().toISOString().slice(0,7);
+const fmt=n=>"$"+(n||0).toLocaleString("es-MX",{minimumFractionDigits:0});
+const fmtK=n=>n>=1000?Math.round(n/1000)+"k":n;
+const setText=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+function tipoClass(t){
+  const m={"Diesel / Combustible":"t-comb",Aerogas:"t-comb","Nómina / Sueldos":"t-nom",Viáticos:"t-viat","Ingreso de Obra":"t-ing","Colegiatura":"t-per","Restaurante / Comida":"t-per","Vacaciones / Viaje":"t-per"};
+  return m[t]||"t-otro";
 }
-
-// ── FORZAR ACTUALIZACION ─────────────────────────
-window.forceUpdate = async () => {
-  const st = document.getElementById("update-status");
-  if (st) st.textContent = "Limpiando cache...";
-  try {
-    const keys = await caches.keys();
-    await Promise.all(keys.map(k => caches.delete(k)));
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage("SKIP_WAITING");
-    }
-    if (st) st.textContent = "Cache limpio. Recargando...";
-    setTimeout(() => window.location.reload(true), 800);
-  } catch(e) {
-    window.location.reload(true);
-  }
-};
 
 // Offline
-window.addEventListener("online",  () => { document.getElementById("toast").style.display="none"; });
-window.addEventListener("offline", () => { document.getElementById("toast").style.display="block"; });
-
-// Service Worker
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js").then(reg => {
-    reg.addEventListener("updatefound", () => {
-      const nw = reg.installing;
-      nw.addEventListener("statechange", () => {
-        if (nw.state === "installed" && navigator.serviceWorker.controller) {
-          const t = document.getElementById("toast");
-          if (t) { t.textContent = "Nueva version disponible — ve a Configurar"; t.style.display="block"; t.style.background="#27AE60"; }
-        }
-      });
-    });
-  }).catch(() => {});
-}
+window.addEventListener("online",  ()=>{ document.getElementById("offline-toast").style.display="none"; });
+window.addEventListener("offline", ()=>{ document.getElementById("offline-toast").style.display="block"; });
+if("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 </script>
 </body>
 </html>
